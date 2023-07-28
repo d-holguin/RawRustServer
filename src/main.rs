@@ -1,6 +1,4 @@
-use std::{collections::HashMap, fs::File, io::Read, time::Duration};
-
-use web_server::server::{MyResult, Request, Response, ResponseBuilder, Server};
+use web_server::server::{ContentType, MyResult, Request, Response, ResponseBuilder, Server};
 
 fn main() {
     match Server::new("127.0.0.1:8000", 4) {
@@ -16,24 +14,19 @@ fn main() {
 }
 
 fn home(_request: Request) -> MyResult<Response> {
-    let mut headers = HashMap::new();
-
     let body = std::fs::read_to_string("assets/home.html")?;
-    headers.insert("Content-Type".to_string(), "text/html".to_string());
-    headers.insert("Content-Length".to_string(), body.len().to_string());
-    std::thread::sleep(Duration::from_secs(5));
+
     Ok(ResponseBuilder::new()
-        .headers(headers)
-        .body(body.into_bytes())
+        .content_type(ContentType::Html)
+        .body_string(body)
         .build())
 }
 
 fn favicon(_request: Request) -> MyResult<Response> {
     let body = std::fs::read("assets/favicon.ico")?;
 
-    let mut headers = HashMap::new();
-    headers.insert("Content-Type".to_string(), "image/x-icon".to_string());
-    headers.insert("Content-Length".to_string(), body.len().to_string());
-
-    Ok(ResponseBuilder::new().headers(headers).body(body).build())
+    Ok(ResponseBuilder::new()
+        .content_type(ContentType::Ico)
+        .body_bytes(body)
+        .build())
 }

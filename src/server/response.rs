@@ -24,7 +24,59 @@ pub struct ResponseBuilder {
     pub response: Response,
 }
 
+pub enum ContentType {
+    Html,
+    PlainTest,
+    Json,
+    Ico,
+}
+
+impl ContentType {
+    fn as_str(&self) -> &'static str {
+        match *self {
+            ContentType::Html => "text/html",
+            ContentType::Json => "application/json",
+            ContentType::PlainTest => "text/plain",
+            ContentType::Ico => "image/x-icon",
+        }
+    }
+}
+impl ToString for ContentType {
+    fn to_string(&self) -> String {
+        self.as_str().to_string()
+    }
+}
 impl ResponseBuilder {
+    pub fn content_type(mut self, content_type: ContentType) -> Self {
+        if self.response.headers.is_none() {
+            self.response.headers = Some(HashMap::new());
+        }
+        self.response
+            .headers
+            .as_mut()
+            .unwrap()
+            .insert("Content-Type".to_string(), content_type.to_string());
+        self
+    }
+    pub fn body_string(mut self, body: String) -> Self {
+        let body_bytes = body.into_bytes();
+        let body_len = body_bytes.len();
+        self.response.body = Some(body_bytes);
+        self = self.content_length(body_len);
+        self
+    }
+    pub fn content_length(mut self, content_length: usize) -> Self {
+        if self.response.headers.is_none() {
+            self.response.headers = Some(HashMap::new());
+        }
+        self.response
+            .headers
+            .as_mut()
+            .unwrap()
+            .insert("Content-Length".to_string(), content_length.to_string());
+        self
+    }
+
     pub fn new() -> ResponseBuilder {
         ResponseBuilder {
             response: Response::default(),
@@ -49,12 +101,10 @@ impl ResponseBuilder {
         self.response.headers = Some(headers);
         self
     }
-
-    pub fn body(mut self, body: Vec<u8>) -> Self {
+    pub fn body_bytes(mut self, body: Vec<u8>) -> Self {
         self.response.body = Some(body);
         self
     }
-
     pub fn build(self) -> Response {
         self.response
     }

@@ -30,11 +30,10 @@ impl Request {
                 })?;
             body.reserve(len);
             for _ in 0..len {
-                let b = reader
+                let b = *reader
                     .fill_buf()?
                     .first()
-                    .ok_or_else(|| -> Box<dyn std::error::Error> { From::from("Unexpected EOF") })?
-                    .clone();
+                    .ok_or_else(|| -> Box<dyn std::error::Error> { From::from("Unexpected EOF") })?;
                 body.push(b);
                 reader.consume(1);
             }
@@ -63,7 +62,7 @@ fn read_request_line(lines: &mut Lines<&mut BufReader<TcpStream>>) -> MyResult<S
     let request_line_str = request_line?;
     let parts: Vec<&str> = request_line_str.split_whitespace().collect();
     if parts.len() != 3 {
-        return Err(From::from(format!("Invalid request line")));
+        return Err(From::from("Invalid request line".to_string()));
     }
     Ok(request_line_str)
 }
@@ -76,12 +75,12 @@ fn parse_headers(
         let line = lines
             .next()
             .ok_or_else(|| "Failed to read line".to_string())??;
-        if line == "" {
+        if line.is_empty() {
             break;
         }
         let parts: Vec<&str> = line.splitn(2, ':').collect();
         if parts.len() != 2 {
-            return Err(From::from(format!("Invalid header")));
+            return Err(From::from("Invalid header".to_string()));
         }
         let name = parts[0].trim().to_string();
         let value = parts[1].trim().to_string();
