@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File, io::Read};
+use std::{collections::HashMap, fs::File, io::Read, time::Duration};
 
 use web_server::server::{MyResult, Request, Response, ResponseBuilder, Server};
 
@@ -21,6 +21,7 @@ fn home(_request: Request) -> MyResult<Response> {
     let body = std::fs::read_to_string("assets/home.html")?;
     headers.insert("Content-Type".to_string(), "text/html".to_string());
     headers.insert("Content-Length".to_string(), body.len().to_string());
+    std::thread::sleep(Duration::from_secs(5));
     Ok(ResponseBuilder::new()
         .headers(headers)
         .body(body.into_bytes())

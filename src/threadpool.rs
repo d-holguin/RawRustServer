@@ -1,13 +1,21 @@
 use std::{
-    sync::{mpsc, Arc, Mutex},
+    sync::{
+        mpsc::{self, Sender},
+        Arc, Mutex,
+    },
     thread::{self, JoinHandle},
 };
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>,
+    sender: mpsc::Sender<Message>,
 }
 type Job = Box<dyn FnOnce() + Send + 'static>;
+
+enum Message {
+    Job(Job),
+    Terminate,
+}
 
 struct Worker {
     id: usize,
@@ -16,8 +24,10 @@ struct Worker {
 
 impl Drop for ThreadPool {
     fn drop(&mut self) {
+        for _ in &self.workers {
+            self.sender.send(Message::Terminate).unwrap();
+        }
         for worker in &mut self.workers {
-            println!("Shutting down worker {}", worker.id);
             if let Some(thread) = worker.thread.take() {
                 thread.join().unwrap();
             }
@@ -26,17 +36,20 @@ impl Drop for ThreadPool {
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Self {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Self {
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv();
-
             match message {
-                Ok(job) => {
+                Ok(Message::Job(job)) => {
                     println!("Worker {id} got a job; executing.");
                     job();
                 }
-                Err(_) => {
-                    println!("worker {id} disconnected; Shutting down.");
+                Ok(Message::Terminate) => {
+                    println!("worker {id} terminated; Shutting down.");
+                    break;
+                }
+                Err(e) => {
+                    println!("Error {e} worker {id} disconnected; Shutting down.");
                     break;
                 }
             }
@@ -66,6 +79,6 @@ impl ThreadPool {
         F: FnOnce() + Send + 'static,
     {
         let job = Box::new(f);
-        self.sender.send(job).unwrap();
+        self.sender.send(Message::Job(job)).unwrap();
     }
 }

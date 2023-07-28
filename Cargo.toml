@@ -15,5 +15,5 @@ name = "web_server"
 path = "src/main.rs"
 
 [dependencies]
-
+ctrlc = "3.4.0"
 

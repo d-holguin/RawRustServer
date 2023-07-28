@@ -4,10 +4,9 @@ use std::{
     net::{TcpListener, TcpStream},
     sync::Arc,
 };
-
 use crate::{server::ResponseBuilder, threadpool::ThreadPool};
-
 use super::{Request, Response};
+
 
 pub type MyResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -40,7 +39,7 @@ impl Server {
     }
     pub fn run(self) -> MyResult<()> {
         for stream_result in self.listener.incoming() {
-            let routes = Arc::clone(&self.routes); // clone here
+            let routes = Arc::clone(&self.routes); 
             match stream_result {
                 Ok(stream) => self.threadpool.execute(move || {
                     if let Err(e) = handle_connection(stream, routes) {
@@ -81,8 +80,6 @@ fn handle_connection(
                 };
                 send_response(&mut stream, &response)?;
 
-                //stream.shutdown(std::net::Shutdown::Both)?;
-
                 match request.headers.get("Connection") {
                     Some(value) if value.to_lowercase() == "close" => {
                         // Close the connection if the header is 'close'.
@@ -112,7 +109,7 @@ fn send_response(stream: &mut TcpStream, response: &Response) -> MyResult<()> {
     let body = &response.body;
 
     let response = format!(
-        "{} {} {}\r\n{}\r\n\r\n{}", // added extra \r\n here
+        "{} {} {}\r\n{}\r\n\r\n{}",
         http_version,
         status_code,
         reason_phrase,
