@@ -1,9 +1,10 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use super::{MyResult, Request, Response};
 
+type RouterHandler = Box<dyn Fn(Request) -> MyResult<Response> + Send + Sync>;
 pub struct Router {
-    pub routes: HashMap<&'static str, Box<dyn Fn(Request) -> MyResult<Response> + Send + Sync>>,
+    pub routes: HashMap<&'static str, RouterHandler>,
 }
 
 impl Router {

@@ -50,8 +50,6 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> MyResult<()> {
     loop {
         match Request::from_reader(&mut buf_reader) {
             Ok(request) => {
-                println!("Received request: {:?}", request);
-
                 let response = if let Some(handler) = &router.routes.get(request.path.as_str()) {
                     handler(request.clone())?
                 } else {

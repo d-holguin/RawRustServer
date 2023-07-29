@@ -65,7 +65,7 @@ impl ResponseBuilder {
         self = self.content_length(body_len);
         self
     }
-    pub fn content_length(mut self, content_length: usize) -> Self {
+    fn content_length(mut self, content_length: usize) -> Self {
         if self.response.headers.is_none() {
             self.response.headers = Some(HashMap::new());
         }
@@ -102,7 +102,9 @@ impl ResponseBuilder {
         self
     }
     pub fn body_bytes(mut self, body: Vec<u8>) -> Self {
+        let content_length = body.len();
         self.response.body = Some(body);
+        self = self.content_length(content_length);
         self
     }
     pub fn build(self) -> Response {
