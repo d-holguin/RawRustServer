@@ -1,10 +1,13 @@
-use web_server::server::{ContentType, MyResult, Request, Response, ResponseBuilder, Server};
+use web_server::server::{
+    ContentType, MyResult, Request, Response, ResponseBuilder, Router, Server,
+};
 
 fn main() {
-    match Server::new("127.0.0.1:8000", 4) {
-        Ok(mut server) => {
-            server.add_route("/home".to_string(), home);
-            server.add_route("/favicon.ico".to_string(), favicon);
+    let router = Router::new()
+        .add_route("/home", home)
+        .add_route("/favicon.ico", favicon);
+    match Server::new("127.0.0.1:8000", 4, router) {
+        Ok(server) => {
             if let Err(e) = server.run() {
                 eprint!("Server error: {}", e);
             }

@@ -1,4 +1,4 @@
-use super::{Request, Response};
+use super::{Request, Response, Router};
 use crate::{server::ResponseBuilder, threadpool::ThreadPool};
 use std::{
     collections::HashMap,
@@ -12,36 +12,28 @@ pub type MyResult<T> = Result<T, Box<dyn std::error::Error>>;
 pub struct Server {
     listener: TcpListener,
     threadpool: ThreadPool,
-    routes: Arc<HashMap<String, Box<dyn Fn(Request) -> MyResult<Response> + Send + Sync>>>,
+    router: Arc<Router>,
 }
 
 impl Server {
-    pub fn new(addr: &str, thread_count: usize) -> MyResult<Self> {
+    pub fn new(addr: &str, thread_count: usize, router: Router) -> MyResult<Self> {
         let listener = TcpListener::bind(addr)?;
         let threadpool = ThreadPool::new(thread_count);
-        let routes = Arc::new(HashMap::new());
+        let router = Arc::new(router);
 
         Ok(Server {
             listener,
             threadpool,
-            routes,
+            router,
         })
     }
 
-    pub fn add_route<F>(&mut self, endpoint: String, handler: F)
-    where
-        F: Fn(Request) -> MyResult<Response> + 'static + Send + Sync,
-    {
-        Arc::get_mut(&mut self.routes)
-            .unwrap()
-            .insert(endpoint, Box::new(handler));
-    }
     pub fn run(self) -> MyResult<()> {
         for stream_result in self.listener.incoming() {
-            let routes = Arc::clone(&self.routes);
+            let router = Arc::clone(&self.router);
             match stream_result {
                 Ok(stream) => self.threadpool.execute(move || {
-                    if let Err(e) = handle_connection(stream, routes) {
+                    if let Err(e) = handle_connection(stream, &router) {
                         eprintln!("Error handling connection: {}", e);
                     }
                 }),
@@ -52,10 +44,7 @@ impl Server {
     }
 }
 
-fn handle_connection(
-    mut stream: TcpStream,
-    routes: Arc<HashMap<String, Box<dyn Fn(Request) -> MyResult<Response> + Send + Sync>>>,
-) -> MyResult<()> {
+fn handle_connection(mut stream: TcpStream, router: &Router) -> MyResult<()> {
     let mut buf_reader = BufReader::new(stream.try_clone()?);
 
     loop {
@@ -63,7 +52,7 @@ fn handle_connection(
             Ok(request) => {
                 println!("Received request: {:?}", request);
 
-                let response = if let Some(handler) = routes.get(&request.path) {
+                let response = if let Some(handler) = &router.routes.get(request.path.as_str()) {
                     handler(request.clone())?
                 } else {
                     let page_404 = std::fs::read_to_string("assets/404.html")?;
