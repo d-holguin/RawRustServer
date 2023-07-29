@@ -5,7 +5,7 @@ use web_server::http_server::{
 fn main() {
     let router = Router::new()
         .add_route(HttpMethod::get("/home"), home)
-        .add_route(HttpMethod::get("/favicon"), favicon);
+        .add_route(HttpMethod::get("/favicon.ico"), favicon);
     match Server::new("127.0.0.1:8000", 4, router) {
         Ok(server) => {
             if let Err(e) = server.run() {
