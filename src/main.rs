@@ -1,11 +1,11 @@
 use web_server::http_server::{
-    ContentType, MyResult, Request, Response, ResponseBuilder, Router, Server,
+    ContentType, HttpMethod, MyResult, Request, Response, ResponseBuilder, Router, Server,
 };
 
 fn main() {
     let router = Router::new()
-        .add_route("/home", home)
-        .add_route("/favicon.ico", favicon);
+        .add_route(HttpMethod::get("/home"), home)
+        .add_route(HttpMethod::get("/favicon"), favicon);
     match Server::new("127.0.0.1:8000", 4, router) {
         Ok(server) => {
             if let Err(e) = server.run() {

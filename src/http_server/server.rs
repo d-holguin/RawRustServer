@@ -1,5 +1,5 @@
-use super::{Request, Response, Router};
-use crate::{http_server::ResponseBuilder, threadpool::ThreadPool};
+use super::{Request, Response, Route, Router};
+use crate::threadpool::ThreadPool;
 use std::{
     collections::HashMap,
     io::{BufReader, Write},
@@ -50,7 +50,10 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> MyResult<()> {
     loop {
         match Request::from_reader(&mut buf_reader) {
             Ok(request) => {
-                let response = if let Some(handler) = &router.routes.get(request.path.as_str()) {
+                let route = Route::new()
+                    .http_method(request.method.clone())
+                    .path(request.path.clone());
+                let response = if let Some(handler) = &router.routes.get(&route) {
                     handler(request.clone())?
                 } else {
                     router.not_found_response.clone()

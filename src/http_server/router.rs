@@ -1,11 +1,36 @@
 use std::collections::HashMap;
 
-use super::{MyResult, Request, Response, ResponseBuilder};
+use super::{HttpMethod, MyResult, Request, Response, ResponseBuilder};
 
-type RouterHandler = Box<dyn Fn(Request) -> MyResult<Response> + Send + Sync>;
+type RouteHandler = Box<dyn Fn(Request) -> MyResult<Response> + Send + Sync>;
 pub struct Router {
-    pub routes: HashMap<&'static str, RouterHandler>,
+    pub routes: HashMap<Route, RouteHandler>,
     pub not_found_response: Response,
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub struct Route {
+    pub http_method: HttpMethod,
+    pub path: String,
+}
+
+impl Route {
+    pub fn new() -> Self {
+        Route {
+            http_method: HttpMethod::GET,
+            path: "/".to_string(),
+        }
+    }
+
+    pub fn http_method(mut self, method: HttpMethod) -> Self {
+        self.http_method = method;
+        self
+    }
+
+    pub fn path(mut self, path: String) -> Self {
+        self.path = path;
+        self
+    }
 }
 
 impl Router {
@@ -15,7 +40,7 @@ impl Router {
             not_found_response: default_not_found_response().unwrap(),
         }
     }
-    pub fn add_route<F>(mut self, route: &'static str, handler: F) -> Self
+    pub fn add_route<F>(mut self, route: Route, handler: F) -> Self
     where
         F: Fn(Request) -> MyResult<Response> + 'static + Send + Sync,
     {
