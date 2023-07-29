@@ -9,8 +9,8 @@ Here's how you can implement a simple web server using this project:
 ```rust
 fn main() {
     let router = Router::new()
-        .add_route("/home", home)
-        .add_route("/favicon.ico", favicon);
+        .add_route(HttpMethod::get("/home"), home)
+        .add_route(HttpMethod::get("/favicon.ico"), favicon);
     match Server::new("127.0.0.1:8000", 4, router) {
         Ok(server) => {
             if let Err(e) = server.run() {
@@ -30,13 +30,14 @@ fn home(_request: Request) -> MyResult<Response> {
         .build())
 }
 
-fn favicon(request: Request) -> MyResult<Response> {
+fn favicon(_request: Request) -> MyResult<Response> {
     let body = std::fs::read("assets/favicon.ico")?;
     Ok(ResponseBuilder::new()
         .content_type(ContentType::Ico)
         .body_bytes(body)
         .build())
 }
+
 ``````
 ## ThreadPool
 
