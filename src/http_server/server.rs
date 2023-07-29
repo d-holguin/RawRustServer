@@ -53,13 +53,7 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> MyResult<()> {
                 let response = if let Some(handler) = &router.routes.get(request.path.as_str()) {
                     handler(request.clone())?
                 } else {
-                    let page_404 = std::fs::read_to_string("assets/404.html")?;
-
-                    ResponseBuilder::new()
-                        .status_code(404)
-                        .reason_phrase("Not Found".to_string())
-                        .body_string(page_404)
-                        .build()
+                    router.not_found_response.clone()
                 };
                 let should_close = send_response(&mut stream, &response, &request)?;
 

@@ -7,10 +7,6 @@
 Here's how you can implement a simple web server using this project:
 
 ```rust
-use web_server::http_server::{
-    ContentType, MyResult, Request, Response, ResponseBuilder, Router, Server,
-};
-
 fn main() {
     let router = Router::new()
         .add_route("/home", home)
@@ -36,15 +32,11 @@ fn home(_request: Request) -> MyResult<Response> {
 
 fn favicon(request: Request) -> MyResult<Response> {
     let body = std::fs::read("assets/favicon.ico")?;
-    println!("Received request: {:?}", request);
     Ok(ResponseBuilder::new()
         .content_type(ContentType::Ico)
         .body_bytes(body)
         .build())
 }
-
-
-
 ``````
 ## ThreadPool
 

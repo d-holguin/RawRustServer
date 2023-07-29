@@ -25,9 +25,8 @@ fn home(_request: Request) -> MyResult<Response> {
         .build())
 }
 
-fn favicon(request: Request) -> MyResult<Response> {
+fn favicon(_request: Request) -> MyResult<Response> {
     let body = std::fs::read("assets/favicon.ico")?;
-    println!("Received request: {:?}", request);
     Ok(ResponseBuilder::new()
         .content_type(ContentType::Ico)
         .body_bytes(body)

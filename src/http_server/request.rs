@@ -6,6 +6,10 @@ use std::{
 
 use super::MyResult;
 
+pub enum HttpMethod {
+    GET,
+    POST
+}
 #[derive(Debug, Clone)]
 pub struct Request {
     pub method: String,
@@ -35,7 +39,7 @@ impl Request {
                     .first()
                     .ok_or_else(|| -> Box<dyn std::error::Error> { From::from("Unexpected EOF") })?;
                 body.push(b);
-                reader.consume(1);
+                reader.consume(1);  
             }
         }
 
