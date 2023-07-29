@@ -1,5 +1,5 @@
 use super::{Request, Response, Router};
-use crate::{server::ResponseBuilder, threadpool::ThreadPool};
+use crate::{http_server::ResponseBuilder, threadpool::ThreadPool};
 use std::{
     collections::HashMap,
     io::{BufReader, Write},
