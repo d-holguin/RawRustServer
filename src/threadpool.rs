@@ -78,7 +78,6 @@ impl ThreadPool {
     where
         F: FnOnce() + Send + 'static,
     {
-        println!("Job sent to worker");
         let job = Box::new(f);
         self.sender.send(Message::Job(job)).unwrap();
     }

@@ -15,7 +15,6 @@ pub struct Server {
 }
 
 impl Server {
-
     pub fn run(self) -> Result<(), AnyErr> {
         for stream_result in self.listener.incoming() {
             let router = Arc::clone(&self.router);

@@ -88,12 +88,8 @@ impl Request {
 
 fn read_request_line(lines: &mut Lines<&mut BufReader<TcpStream>>) -> Result<String, AnyErr> {
     let request_line_result = lines.next().ok_or_else(|| AnyErr::new("No request line"))?;
-    let request_line_str = request_line_result.map_err(|error| {
-        AnyErr::wrap(
-            format!("Unable to get request string: {}", error.to_string()),
-            error,
-        )
-    })?;
+    let request_line_str = request_line_result
+        .map_err(|error| AnyErr::wrap(format!("Unable to get request string: {}", error), error))?;
     let parts: Vec<&str> = request_line_str.split_whitespace().collect();
     if parts.len() != 3 {
         return Err(AnyErr::new(format!(

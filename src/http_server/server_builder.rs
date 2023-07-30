@@ -1,11 +1,8 @@
 use std::{net::TcpListener, sync::Arc};
 
-use crate::{
-    threadpool::{self, ThreadPool},
-    utils::AnyErr,
-};
+use crate::{threadpool::ThreadPool, utils::AnyErr};
 
-use super::{router, Router, Server};
+use super::{Router, Server};
 
 pub struct ServerBuilder {
     address: Option<String>,
