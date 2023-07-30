@@ -1,34 +1,22 @@
 use super::{Request, Response, Route, Router};
-use crate::threadpool::ThreadPool;
+use crate::{threadpool::ThreadPool, utils::AnyErr};
 use std::{
     collections::HashMap,
     io::{BufReader, Write},
     net::{TcpListener, TcpStream},
     sync::Arc,
+    time::Duration,
 };
 
-pub type MyResult<T> = Result<T, Box<dyn std::error::Error>>;
-
 pub struct Server {
-    listener: TcpListener,
-    threadpool: ThreadPool,
-    router: Arc<Router>,
+    pub listener: TcpListener,
+    pub threadpool: ThreadPool,
+    pub router: Arc<Router>,
 }
 
 impl Server {
-    pub fn new(addr: &str, thread_count: usize, router: Router) -> MyResult<Self> {
-        let listener = TcpListener::bind(addr)?;
-        let threadpool = ThreadPool::new(thread_count);
-        let router = Arc::new(router);
 
-        Ok(Server {
-            listener,
-            threadpool,
-            router,
-        })
-    }
-
-    pub fn run(self) -> MyResult<()> {
+    pub fn run(self) -> Result<(), AnyErr> {
         for stream_result in self.listener.incoming() {
             let router = Arc::clone(&self.router);
             match stream_result {
@@ -37,26 +25,30 @@ impl Server {
                         eprintln!("Error handling connection: {}", e);
                     }
                 }),
-                Err(e) => return Err(From::from(format!("Failed to handle connection: {}", e))),
+                Err(e) => return Err(AnyErr::new(format!("Failed to handle connection {}", e))),
             }
         }
         Ok(())
     }
 }
 
-fn handle_connection(mut stream: TcpStream, router: &Router) -> MyResult<()> {
+fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyErr> {
     let mut buf_reader = BufReader::new(stream.try_clone()?);
 
     loop {
+        println!("Handling a request");
+        stream
+            .set_read_timeout(Some(Duration::from_secs(60)))
+            .expect("Failed to set read timeout");
         match Request::from_reader(&mut buf_reader) {
             Ok(request) => {
                 let route = Route::new()
                     .http_method(request.method.clone())
                     .path(request.path.clone());
-                let response = if let Some(handler) = &router.routes.get(&route) {
-                    handler(request.clone())?
-                } else {
-                    router.not_found_response.clone()
+
+                let response = match &router.routes.get(&route) {
+                    Some(handler) => handler(request.clone())?,
+                    None => router.not_found_response.clone(),
                 };
                 let should_close = send_response(&mut stream, &response, &request)?;
 
@@ -74,7 +66,11 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> MyResult<()> {
     Ok(())
 }
 
-fn send_response(stream: &mut TcpStream, response: &Response, request: &Request) -> MyResult<bool> {
+fn send_response(
+    stream: &mut TcpStream,
+    response: &Response,
+    request: &Request,
+) -> Result<bool, AnyErr> {
     let http_version = &response.http_version;
     let status_code = response.status_code;
     let reason_phrase = &response.reason_phrase;

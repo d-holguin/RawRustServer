@@ -1,22 +1,33 @@
-use web_server::http_server::{
-    ContentType, HttpMethod, MyResult, Request, Response, ResponseBuilder, Router, Server,
+use web_server::{
+    http_server::{
+        ContentType, HttpMethod, Request, Response, ResponseBuilder, Router, ServerBuilder,
+    },
+    utils::AnyErr,
 };
 
 fn main() {
-    let router = Router::new()
-        .add_route(HttpMethod::get("/home"), home)
-        .add_route(HttpMethod::get("/favicon.ico"), favicon);
-    match Server::new("127.0.0.1:8000", 4, router) {
-        Ok(server) => {
-            if let Err(e) = server.run() {
-                eprint!("Server error: {}", e);
-            }
+    match run_server() {
+        Ok(_) => println!("Server shut down successfully."),
+        Err(e) => {
+            eprintln!("Failed to run server: {:?}", e);
+            std::process::exit(1);
         }
-        Err(e) => eprintln!("Failed to start server: {}", e),
     }
 }
+fn run_server() -> Result<(), AnyErr> {
+    let router = Router::new()
+        .add_route(HttpMethod::get("/"), home)
+        .add_route(HttpMethod::get("/favicon.ico"), favicon);
 
-fn home(_request: Request) -> MyResult<Response> {
+    let server = ServerBuilder::new()
+        .address("127.0.0.1:8000")
+        .thread_count(4)
+        .router(router)
+        .build()?;
+    server.run()
+}
+
+fn home(_request: Request) -> Result<Response, AnyErr> {
     let body = std::fs::read_to_string("assets/home.html")?;
 
     Ok(ResponseBuilder::new()
@@ -25,7 +36,7 @@ fn home(_request: Request) -> MyResult<Response> {
         .build())
 }
 
-fn favicon(_request: Request) -> MyResult<Response> {
+fn favicon(_request: Request) -> Result<Response, AnyErr> {
     let body = std::fs::read("assets/favicon.ico")?;
     Ok(ResponseBuilder::new()
         .content_type(ContentType::Ico)

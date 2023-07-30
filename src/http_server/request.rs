@@ -1,3 +1,4 @@
+use crate::utils::AnyErr;
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Lines},
@@ -5,7 +6,7 @@ use std::{
     str::FromStr,
 };
 
-use super::{MyResult, Route};
+use super::Route;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HttpMethod {
@@ -13,13 +14,13 @@ pub enum HttpMethod {
     POST,
 }
 impl FromStr for HttpMethod {
-    type Err = Box<dyn std::error::Error>;
+    type Err = AnyErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_uppercase().as_str() {
             "GET" => Ok(HttpMethod::GET),
             "POST" => Ok(HttpMethod::POST),
-            _ => Err(From::from(format!("Invalid Http method {s}"))),
+            _ => Err(AnyErr::new(format!("Invalid Http method {}", s))),
         }
     }
 }
@@ -42,7 +43,7 @@ pub struct Request {
 }
 
 impl Request {
-    pub fn from_reader(reader: &mut BufReader<TcpStream>) -> MyResult<Request> {
+    pub fn from_reader(reader: &mut BufReader<TcpStream>) -> Result<Request, AnyErr> {
         let mut lines = reader.lines();
         let request_line = read_request_line(&mut lines)?;
         let headers = parse_headers(&mut lines)?;
@@ -51,18 +52,14 @@ impl Request {
         if let Some(len) = headers.get("Content-Length") {
             let len: usize = len
                 .parse::<usize>()
-                .map_err(|e| -> Box<dyn std::error::Error> {
-                    From::from(format!("Failed to parse Content-Length: {}", e))
-                })?;
+                .map_err(|e| AnyErr::wrap("Error parsing content length".to_string(), e))?;
             body.reserve(len);
             for _ in 0..len {
-                let b =
-                    *reader
-                        .fill_buf()?
-                        .first()
-                        .ok_or_else(|| -> Box<dyn std::error::Error> {
-                            From::from("Unexpected EOF")
-                        })?;
+                let b = *reader
+                    .fill_buf()
+                    .map_err(|e| AnyErr::wrap("Error reading request body".to_string(), e))?
+                    .first()
+                    .ok_or_else(|| AnyErr::new("Unexpected EOF"))?;
                 body.push(b);
                 reader.consume(1);
             }
@@ -76,7 +73,9 @@ impl Request {
             parts[2].to_string(),
         );
 
-        let method = HttpMethod::from_str(&method_string)?;
+        let method = HttpMethod::from_str(&method_string)
+            .map_err(|e| AnyErr::wrap("Invalid HTTP Method".to_string(), e))?;
+
         Ok(Request {
             method,
             path,
@@ -87,30 +86,38 @@ impl Request {
     }
 }
 
-fn read_request_line(lines: &mut Lines<&mut BufReader<TcpStream>>) -> MyResult<String> {
-    let request_line = lines.next().ok_or_else(|| "No request line".to_string())?;
-    let request_line_str = request_line?;
+fn read_request_line(lines: &mut Lines<&mut BufReader<TcpStream>>) -> Result<String, AnyErr> {
+    let request_line_result = lines.next().ok_or_else(|| AnyErr::new("No request line"))?;
+    let request_line_str = request_line_result.map_err(|error| {
+        AnyErr::wrap(
+            format!("Unable to get request string: {}", error.to_string()),
+            error,
+        )
+    })?;
     let parts: Vec<&str> = request_line_str.split_whitespace().collect();
     if parts.len() != 3 {
-        return Err(From::from("Invalid request line".to_string()));
+        return Err(AnyErr::new(format!(
+            "Invalid request string {}",
+            request_line_str
+        )));
     }
     Ok(request_line_str)
 }
 
 fn parse_headers(
     lines: &mut Lines<&mut BufReader<TcpStream>>,
-) -> MyResult<HashMap<String, String>> {
+) -> Result<HashMap<String, String>, AnyErr> {
     let mut headers: HashMap<String, String> = HashMap::new();
     loop {
         let line = lines
             .next()
-            .ok_or_else(|| "Failed to read line".to_string())??;
+            .ok_or_else(|| AnyErr::new("Failed to read line"))??;
         if line.is_empty() {
             break;
         }
         let parts: Vec<&str> = line.splitn(2, ':').collect();
         if parts.len() != 2 {
-            return Err(From::from("Invalid header".to_string()));
+            return Err(AnyErr::new("Invalid header format"));
         }
         let name = parts[0].trim().to_string();
         let value = parts[1].trim().to_string();

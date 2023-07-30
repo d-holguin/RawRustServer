@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
-use super::{HttpMethod, MyResult, Request, Response, ResponseBuilder};
+use crate::utils::AnyErr;
 
-type RouteHandler = Box<dyn Fn(Request) -> MyResult<Response> + Send + Sync>;
+use super::{HttpMethod, Request, Response, ResponseBuilder};
+
+type RouteHandler = Box<dyn Fn(Request) -> Result<Response, AnyErr> + Send + Sync + 'static>;
 pub struct Router {
     pub routes: HashMap<Route, RouteHandler>,
     pub not_found_response: Response,
@@ -42,7 +44,7 @@ impl Router {
     }
     pub fn add_route<F>(mut self, route: Route, handler: F) -> Self
     where
-        F: Fn(Request) -> MyResult<Response> + 'static + Send + Sync,
+        F: Fn(Request) -> Result<Response, AnyErr> + Send + Sync + 'static,
     {
         self.routes.insert(route, Box::new(handler));
         self
@@ -53,7 +55,7 @@ impl Router {
     }
 }
 
-fn default_not_found_response() -> MyResult<Response> {
+fn default_not_found_response() -> Result<Response, AnyErr> {
     let page_404 = include_str!("../../assets/404.html").to_string();
 
     Ok(ResponseBuilder::new()
