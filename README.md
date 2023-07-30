@@ -1,27 +1,34 @@
 # RustThreadPoolServer
 
-`RustThreadPoolServer` is a multi-threaded web server built with Rust. This project, inspired by the example in The Rust Programming Language book, provides a minimal, yet fully-functional, web server. I use this project to deepen my understanding of Rust and its concurrency features, and the underlying principles of HTTP.
-
+`RustThreadPoolServer` is a multi-threaded web server built with Rust. It does not rely on any third-party libraries and uses only the standard library provided by Rust. This project, inspired by the example in [The Rust Programming Language book](https://doc.rust-lang.org/book/ch20-00-final-project-a-web-server.html), provides a minimal, yet fully-functional, web server. I use this project to deepen my understanding of Rust and its concurrency features, and the underlying principles of HTTP. 
 ## Usage
 
 Here's how you can implement a simple web server using this project:
 
 ```rust
 fn main() {
-    let router = Router::new()
-        .add_route(HttpMethod::get("/home"), home)
-        .add_route(HttpMethod::get("/favicon.ico"), favicon);
-    match Server::new("127.0.0.1:8000", 4, router) {
-        Ok(server) => {
-            if let Err(e) = server.run() {
-                eprint!("Server error: {}", e);
-            }
+    match run_server() {
+        Ok(_) => println!("Server shut down successfully."),
+        Err(e) => {
+            eprintln!("Failed to run server: {:?}", e);
+            std::process::exit(1);
         }
-        Err(e) => eprintln!("Failed to start server: {}", e),
     }
 }
+fn run_server() -> Result<(), AnyErr> {
+    let router = Router::new()
+        .add_route(HttpMethod::get("/"), home)
+        .add_route(HttpMethod::get("/favicon.ico"), favicon);
 
-fn home(_request: Request) -> MyResult<Response> {
+    let server = ServerBuilder::new()
+        .address("127.0.0.1:8000")
+        .thread_count(4)
+        .router(router)
+        .build()?;
+    server.run()
+}
+
+fn home(_request: Request) -> Result<Response, AnyErr> {
     let body = std::fs::read_to_string("assets/home.html")?;
 
     Ok(ResponseBuilder::new()
@@ -29,15 +36,6 @@ fn home(_request: Request) -> MyResult<Response> {
         .body_string(body)
         .build())
 }
-
-fn favicon(_request: Request) -> MyResult<Response> {
-    let body = std::fs::read("assets/favicon.ico")?;
-    Ok(ResponseBuilder::new()
-        .content_type(ContentType::Ico)
-        .body_bytes(body)
-        .build())
-}
-
 ``````
 ## ThreadPool
 
@@ -66,3 +64,25 @@ impl ThreadPool {
         self.sender.send(Message::Job(job)).unwrap();
     }
 }
+```
+
+## Error Handling
+The project leverages a custom error type, `AnyErr`, for flexible and efficient error handling. `AnyErr` can wrap any error, providing additional context while maintaining the original error as the source. This enables better error tracking and easier debugging. Inspired by [anyhow](https://github.com/dtolnay/anyhow).
+
+Here's a look at `AnyErr`:
+```rust
+pub struct AnyErr {
+    message: String,
+    source: Option<Box<dyn Error>>,
+}
+
+impl AnyErr {
+    pub fn new<M: Into<String>>(message: M) -> Self {
+        //...
+    }
+
+    pub fn wrap<E: Error + 'static>(message: String, error: E) -> Self {
+        //...
+    }
+}
+```
