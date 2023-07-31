@@ -30,7 +30,10 @@ impl Server {
         Ok(())
     }
 }
-
+enum ResponseStatus {
+    Done,
+    Continue,
+}
 fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyErr> {
     let mut buf_reader = BufReader::new(stream.try_clone()?);
 
@@ -49,10 +52,9 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyEr
                     Some(handler) => handler(request.clone())?,
                     None => router.not_found_response.clone(),
                 };
-                let should_close = send_response(&mut stream, &response, &request)?;
-
-                if should_close {
-                    break;
+                match send_response(&mut stream, &response, &request)? {
+                    ResponseStatus::Done => break,
+                    ResponseStatus::Continue => continue,
                 }
             }
             Err(e) => {
@@ -69,7 +71,7 @@ fn send_response(
     stream: &mut TcpStream,
     response: &Response,
     request: &Request,
-) -> Result<bool, AnyErr> {
+) -> Result<ResponseStatus, AnyErr> {
     let http_version = &response.http_version;
     let status_code = response.status_code;
     let reason_phrase = &response.reason_phrase;
@@ -88,17 +90,9 @@ fn send_response(
     if let Some(body) = &response.body {
         stream.write_all(body)?;
     }
+    //let connection_header = request.headers.get("Connection").map(|s| s.to_lowercase());
 
-    // Check for the Connection header in the response
-    if let Some(connection_header) = request.headers.get("Connection") {
-        if connection_header.to_lowercase() == "close" {
-            println!("Closing connection");
-            stream.shutdown(std::net::Shutdown::Both)?;
-            return Ok(true);
-        }
-    }
-
-    Ok(false)
+    Ok(ResponseStatus::Done)
 }
 
 fn format_headers(headers: &HashMap<String, String>) -> String {

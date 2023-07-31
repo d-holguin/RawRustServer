@@ -6,7 +6,7 @@ use std::{
     str::FromStr,
 };
 
-use super::Route;
+use super::{ContentType, Route};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HttpMethod {
@@ -31,6 +31,11 @@ impl HttpMethod {
             .http_method(HttpMethod::GET)
             .path(path.to_string())
     }
+    pub fn post(path: &str) -> Route {
+        Route::new()
+            .http_method(HttpMethod::POST)
+            .path(path.to_string())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +45,7 @@ pub struct Request {
     pub http_version: String,
     pub headers: HashMap<String, String>,
     pub body: Vec<u8>,
+    pub form_data: Option<HashMap<String, String>>,
 }
 
 impl Request {
@@ -49,19 +55,23 @@ impl Request {
         let headers = parse_headers(&mut lines)?;
         // Read body
         let mut body = Vec::new();
-        if let Some(len) = headers.get("Content-Length") {
+        let content_type = headers
+            .get("content-type")
+            .map(|s| ContentType::from_str(s))
+            .transpose()?;
+
+        if let Some(len) = headers.get("content-length") {
             let len: usize = len
                 .parse::<usize>()
                 .map_err(|e| AnyErr::wrap("Error parsing content length".to_string(), e))?;
             body.reserve(len);
-            for _ in 0..len {
-                let b = *reader
+            while body.len() < len {
+                let buffer = reader
                     .fill_buf()
-                    .map_err(|e| AnyErr::wrap("Error reading request body".to_string(), e))?
-                    .first()
-                    .ok_or_else(|| AnyErr::new("Unexpected EOF"))?;
-                body.push(b);
-                reader.consume(1);
+                    .map_err(|e| AnyErr::wrap("Error reading request body".to_string(), e))?;
+                let bytes_to_read = std::cmp::min(buffer.len(), len - body.len());
+                body.extend_from_slice(&buffer[..bytes_to_read]);
+                reader.consume(bytes_to_read);
             }
         }
 
@@ -76,14 +86,41 @@ impl Request {
         let method = HttpMethod::from_str(&method_string)
             .map_err(|e| AnyErr::wrap("Invalid HTTP Method".to_string(), e))?;
 
+        let form_data = if method == HttpMethod::POST {
+            match content_type {
+                Some(ContentType::FormUrlEncoded) => {
+                    let body_str = String::from_utf8(body.clone()).map_err(|e| {
+                        AnyErr::wrap("Error parsing request body as string".to_string(), e)
+                    })?;
+                    Some(parse_form_urlencoded(&body_str))
+                }
+                _ => {
+                    return Err(AnyErr::new(
+                        "Unsupported Content-Type for POST request".to_string(),
+                    ))
+                }
+            }
+        } else {
+            None
+        };
+
         Ok(Request {
             method,
             path,
             http_version,
             headers,
             body,
+            form_data,
         })
     }
+}
+fn parse_form_urlencoded(s: &str) -> HashMap<String, String> {
+    s.split('&')
+        .filter_map(|part| {
+            let mut split = part.splitn(2, '=');
+            Some((split.next()?.to_string(), split.next()?.to_string()))
+        })
+        .collect()
 }
 
 fn read_request_line(lines: &mut Lines<&mut BufReader<TcpStream>>) -> Result<String, AnyErr> {
@@ -115,8 +152,9 @@ fn parse_headers(
         if parts.len() != 2 {
             return Err(AnyErr::new("Invalid header format"));
         }
-        let name = parts[0].trim().to_string();
-        let value = parts[1].trim().to_string();
+
+        let name = parts[0].trim().to_string().to_lowercase();
+        let value = parts[1].trim().to_string().to_lowercase();
         headers.insert(name, value);
     }
     Ok(headers)

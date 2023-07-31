@@ -1,4 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
+
+use crate::utils::AnyErr;
 
 #[derive(Debug, Clone)]
 pub struct Response {
@@ -7,6 +9,7 @@ pub struct Response {
     pub reason_phrase: String,
     pub headers: Option<HashMap<String, String>>,
     pub body: Option<Vec<u8>>,
+    pub location: Option<String>,
 }
 
 impl Default for Response {
@@ -17,6 +20,7 @@ impl Default for Response {
             reason_phrase: "OK".to_string(),
             headers: None,
             body: None,
+            location: None,
         }
     }
 }
@@ -24,11 +28,13 @@ pub struct ResponseBuilder {
     pub response: Response,
 }
 
+#[derive(PartialEq)]
 pub enum ContentType {
     Html,
     PlainTest,
     Json,
     Ico,
+    FormUrlEncoded,
 }
 
 impl ContentType {
@@ -38,6 +44,20 @@ impl ContentType {
             ContentType::Json => "application/json",
             ContentType::PlainTest => "text/plain",
             ContentType::Ico => "image/x-icon",
+            ContentType::FormUrlEncoded => "application/x-www-form-urlencoded",
+        }
+    }
+}
+impl FromStr for ContentType {
+    type Err = AnyErr;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "text/html" => Ok(ContentType::Html),
+            "application/json" => Ok(ContentType::Json),
+            "text/plain" => Ok(ContentType::PlainTest),
+            "image/x-icon" => Ok(ContentType::Ico),
+            "application/x-www-form-urlencoded" => Ok(ContentType::FormUrlEncoded),
+            _ => Err(AnyErr::new(format!("Invalid content type {}", s))),
         }
     }
 }
@@ -56,6 +76,18 @@ impl ResponseBuilder {
             .as_mut()
             .unwrap()
             .insert("Content-Type".to_string(), content_type.to_string());
+        self
+    }
+    pub fn temp_redirect(mut self, location: impl ToString) -> Self {
+        if self.response.headers.is_none() {
+            self.response.headers = Some(HashMap::new());
+        }
+        self.response
+            .headers
+            .as_mut()
+            .unwrap()
+            .insert("Location".to_string(), location.to_string());
+        self = self.status_code(302);
         self
     }
     pub fn body_string(mut self, body: String) -> Self {

@@ -16,8 +16,10 @@ fn main() {
 }
 fn run_server() -> Result<(), AnyErr> {
     let router = Router::new()
-        .add_route(HttpMethod::get("/"), home)
-        .add_route(HttpMethod::get("/favicon.ico"), favicon);
+        .add_route(HttpMethod::get("/home"), home)
+        .add_route(HttpMethod::get("/favicon.ico"), favicon)
+        .add_route(HttpMethod::post("/login"), post_login)
+        .add_route(HttpMethod::get("/login"), get_login);
 
     let server = ServerBuilder::new()
         .address("127.0.0.1:8000")
@@ -25,6 +27,47 @@ fn run_server() -> Result<(), AnyErr> {
         .router(router)
         .build()?;
     server.run()
+}
+fn get_login(_request: Request) -> Result<Response, AnyErr> {
+    let html = include_str!("../assets/login.html");
+
+    Ok(ResponseBuilder::new()
+        .content_type(ContentType::Html)
+        .body_string(html.to_string())
+        .build())
+}
+fn post_login(request: Request) -> Result<Response, AnyErr> {
+    if let Some(form_data) = request.form_data {
+        let username = match form_data.get("username") {
+            Some(username) => username,
+            None => {
+                return Ok(ResponseBuilder::new()
+                    .temp_redirect("/login?message=Username field is missing in form data")
+                    .build());
+            }
+        };
+
+        let password = match form_data.get("password") {
+            Some(password) => password,
+            None => {
+                return Ok(ResponseBuilder::new()
+                    .temp_redirect("/login?message=Password field is missing in form data")
+                    .build());
+            }
+        };
+
+        if username != "admin" || password != "hunter12" {
+            return Ok(ResponseBuilder::new()
+                .temp_redirect("/login?message=Incorrect username or password")
+                .build());
+        }
+
+        return Ok(ResponseBuilder::new().temp_redirect("/home").build());
+    }
+
+    Ok(ResponseBuilder::new()
+        .temp_redirect("/login?message=Invalid Form")
+        .build())
 }
 
 fn home(_request: Request) -> Result<Response, AnyErr> {
