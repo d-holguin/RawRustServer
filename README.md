@@ -8,9 +8,8 @@
 
 `RustThreadPoolServer` is a multi-threaded web server built with Rust. It does not rely on any third-party libraries and uses only the standard library provided by Rust. This project, inspired by the example in [The Rust Programming Language book](https://doc.rust-lang.org/book/ch20-00-final-project-a-web-server.html), provides a minimal, yet fully-functional, web server. I use this project to deepen my understanding of Rust and its concurrency features, and the underlying principles of HTTP. 
 ## Usage
-
 In this example, we implement a simple login page with GET and POST handler functions. Once a successful login is processed, a redirect response is sent:
-
+![Usage Example](https://github.com/d-holguin/RustThreadPoolServer/blob/main/example/usage-example.gif)
 ```rust
 
 fn main() {
