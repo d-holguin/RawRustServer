@@ -37,12 +37,14 @@ fn get_login(_request: Request) -> Result<Response, AnyErr> {
         .build())
 }
 fn post_login(request: Request) -> Result<Response, AnyErr> {
+    let err_login = include_str!("../assets/error-login.html").to_string();
     if let Some(form_data) = request.form_data {
         let username = match form_data.get("username") {
             Some(username) => username,
             None => {
                 return Ok(ResponseBuilder::new()
-                    .temp_redirect("/login?message=Username field is missing in form data")
+                    .content_type(ContentType::Html)
+                    .body_string(err_login)
                     .build());
             }
         };
@@ -51,14 +53,16 @@ fn post_login(request: Request) -> Result<Response, AnyErr> {
             Some(password) => password,
             None => {
                 return Ok(ResponseBuilder::new()
-                    .temp_redirect("/login?message=Password field is missing in form data")
+                    .content_type(ContentType::Html)
+                    .body_string(err_login)
                     .build());
             }
         };
 
         if username != "admin" || password != "hunter12" {
             return Ok(ResponseBuilder::new()
-                .temp_redirect("/login?message=Incorrect username or password")
+                .content_type(ContentType::Html)
+                .body_string(err_login)
                 .build());
         }
 
@@ -66,7 +70,8 @@ fn post_login(request: Request) -> Result<Response, AnyErr> {
     }
 
     Ok(ResponseBuilder::new()
-        .temp_redirect("/login?message=Invalid Form")
+        .content_type(ContentType::Html)
+        .body_string(err_login)
         .build())
 }
 
