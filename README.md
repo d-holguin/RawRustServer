@@ -1,11 +1,18 @@
+## Table of Contents
+
+- [RustThreadPoolServer](#rustthreadpoolserver)
+- [Usage](#usage)
+- [ThreadPool](#threadpool)
+- [Error Handling](#error-handling)
 # RustThreadPoolServer
 
 `RustThreadPoolServer` is a multi-threaded web server built with Rust. It does not rely on any third-party libraries and uses only the standard library provided by Rust. This project, inspired by the example in [The Rust Programming Language book](https://doc.rust-lang.org/book/ch20-00-final-project-a-web-server.html), provides a minimal, yet fully-functional, web server. I use this project to deepen my understanding of Rust and its concurrency features, and the underlying principles of HTTP. 
 ## Usage
 
-Here's how you can implement a simple web server using this project:
+In this example, we implement a simple login page with GET and POST handler functions. Once a successful login is processed, a redirect response is sent:
 
 ```rust
+
 fn main() {
     match run_server() {
         Ok(_) => println!("Server shut down successfully."),
@@ -17,8 +24,10 @@ fn main() {
 }
 fn run_server() -> Result<(), AnyErr> {
     let router = Router::new()
-        .add_route(HttpMethod::get("/"), home)
-        .add_route(HttpMethod::get("/favicon.ico"), favicon);
+        .add_route(HttpMethod::get("/home"), home)
+        .add_route(HttpMethod::get("/favicon.ico"), favicon)
+        .add_route(HttpMethod::post("/login"), post_login)
+        .add_route(HttpMethod::get("/login"), get_login);
 
     let server = ServerBuilder::new()
         .address("127.0.0.1:8000")
@@ -27,15 +36,53 @@ fn run_server() -> Result<(), AnyErr> {
         .build()?;
     server.run()
 }
-
-fn home(_request: Request) -> Result<Response, AnyErr> {
-    let body = std::fs::read_to_string("assets/home.html")?;
+fn get_login(_request: Request) -> Result<Response, AnyErr> {
+    let html = include_str!("../assets/login.html");
 
     Ok(ResponseBuilder::new()
         .content_type(ContentType::Html)
-        .body_string(body)
+        .body_string(html.to_string())
         .build())
 }
+fn post_login(request: Request) -> Result<Response, AnyErr> {
+    let err_login = include_str!("../assets/error-login.html").to_string();
+    if let Some(form_data) = request.form_data {
+        let username = match form_data.get("username") {
+            Some(username) => username,
+            None => {
+                return Ok(ResponseBuilder::new()
+                    .content_type(ContentType::Html)
+                    .body_string(err_login)
+                    .build());
+            }
+        };
+
+        let password = match form_data.get("password") {
+            Some(password) => password,
+            None => {
+                return Ok(ResponseBuilder::new()
+                    .content_type(ContentType::Html)
+                    .body_string(err_login)
+                    .build());
+            }
+        };
+
+        if username != "admin" || password != "hunter12" {
+            return Ok(ResponseBuilder::new()
+                .content_type(ContentType::Html)
+                .body_string(err_login)
+                .build());
+        }
+
+        return Ok(ResponseBuilder::new().temp_redirect("/home").build());
+    }
+
+    Ok(ResponseBuilder::new()
+        .content_type(ContentType::Html)
+        .body_string(err_login)
+        .build())
+}
+
 ``````
 ## ThreadPool
 
