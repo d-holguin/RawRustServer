@@ -76,7 +76,7 @@ fn post_login(request: Request) -> Result<Response, AnyErr> {
 }
 
 fn home(_request: Request) -> Result<Response, AnyErr> {
-    let body = std::fs::read_to_string("assets/home.html")?;
+    let body = include_str!("../assets/home.html").to_string();
 
     Ok(ResponseBuilder::new()
         .content_type(ContentType::Html)
@@ -85,7 +85,7 @@ fn home(_request: Request) -> Result<Response, AnyErr> {
 }
 
 fn favicon(_request: Request) -> Result<Response, AnyErr> {
-    let body = std::fs::read("assets/favicon.ico")?;
+    let body = include_bytes!("../assets/favicon.ico").to_vec();
     Ok(ResponseBuilder::new()
         .content_type(ContentType::Ico)
         .body_bytes(body)
