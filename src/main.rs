@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use web_server::database::SimpleDB;
 use web_server::http_server::RouteHandler;
 use web_server::{
@@ -46,23 +45,21 @@ impl RouteHandler for PostLoginHandler {
     fn handle(&self, request: Request) -> Result<Response, AnyErr> {
         let err_login = include_str!("../assets/error-login.html").to_string();
         if let Some(form_data) = request.form_data {
+            let error_response = Ok(ResponseBuilder::new()
+                .content_type(ContentType::Html)
+                .body_string(err_login)
+                .build());
             let username = match form_data.get("username") {
                 Some(username) => username,
                 None => {
-                    return Ok(ResponseBuilder::new()
-                        .content_type(ContentType::Html)
-                        .body_string(err_login)
-                        .build());
+                    return error_response;
                 }
             };
 
             let password = match form_data.get("password") {
                 Some(password) => password,
                 None => {
-                    return Ok(ResponseBuilder::new()
-                        .content_type(ContentType::Html)
-                        .body_string(err_login)
-                        .build());
+                    return error_response;
                 }
             };
 
@@ -72,10 +69,7 @@ impl RouteHandler for PostLoginHandler {
                     return Ok(ResponseBuilder::new().temp_redirect("/home").build());
                 }
                 _ => {
-                    return Ok(ResponseBuilder::new()
-                        .content_type(ContentType::Html)
-                        .body_string(err_login)
-                        .build());
+                    return error_response;
                 }
             }
         }
