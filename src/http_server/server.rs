@@ -50,7 +50,7 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyEr
                     .path(request.path.clone());
 
                 let response = match &router.routes.get(&route) {
-                    Some(handler) => handler(request.clone())?,
+                    Some(handler) => handler.handle(request.clone())?,
                     None => router.not_found_response.clone(),
                 };
                 match send_response(&mut stream, &response, &request)? {

@@ -42,9 +42,9 @@ impl AnyErr {
         }
     }
 
-    pub fn wrap<E: Error + 'static>(message: String, error: E) -> Self {
+    pub fn wrap<E: Error + 'static>(message: impl Into<String>, error: E) -> Self {
         AnyErr {
-            message,
+            message: message.into(),
             source: Some(Box::new(error)),
         }
     }

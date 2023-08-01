@@ -131,4 +131,21 @@ impl AnyErr {
         //...
     }
 }
+
+//Example usage 
+if let Some(len) = headers.get("content-length") {
+    let len: usize = len
+        .parse::<usize>()
+        .map_err(|e| AnyErr::wrap("Error parsing content length".to_string(), e))?;
+    body.reserve(len);
+    while body.len() < len {
+        let buffer = reader
+            .fill_buf()
+            .map_err(|e| AnyErr::wrap("Error reading request body".to_string(), e))?;
+        let bytes_to_read = std::cmp::min(buffer.len(), len - body.len());
+        body.extend_from_slice(&buffer[..bytes_to_read]);
+        reader.consume(bytes_to_read);
+    }
+}
+
 ```

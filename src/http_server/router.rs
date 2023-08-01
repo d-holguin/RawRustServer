@@ -4,9 +4,13 @@ use crate::utils::AnyErr;
 
 use super::{HttpMethod, Request, Response, ResponseBuilder};
 
-type RouteHandler = Box<dyn Fn(Request) -> Result<Response, AnyErr> + Send + Sync + 'static>;
+pub trait RouteHandler: Send + Sync {
+    fn handle(&self, request: Request) -> Result<Response, AnyErr>;
+}
+
+//type RouteHandler = Box<dyn Fn(Request) -> Result<Response, AnyErr> + Send + Sync + 'static>;
 pub struct Router {
-    pub routes: HashMap<Route, RouteHandler>,
+    pub routes: HashMap<Route, Box<dyn RouteHandler>>,
     pub not_found_response: Response,
 }
 
@@ -42,10 +46,7 @@ impl Router {
             not_found_response: default_not_found_response().unwrap(),
         }
     }
-    pub fn add_route<F>(mut self, route: Route, handler: F) -> Self
-    where
-        F: Fn(Request) -> Result<Response, AnyErr> + Send + Sync + 'static,
-    {
+    pub fn add_route<H: RouteHandler + 'static>(mut self, route: Route, handler: H) -> Self {
         self.routes.insert(route, Box::new(handler));
         self
     }
