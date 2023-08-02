@@ -16,7 +16,7 @@ pub struct Server {
 
 impl Server {
     pub fn run(self) -> Result<(), AnyErr> {
-        println!("Server started");
+        println!("Server Started...");
         for stream_result in self.listener.incoming() {
             let router = Arc::clone(&self.router);
             match stream_result {
@@ -71,7 +71,7 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyEr
 fn send_response(
     stream: &mut TcpStream,
     response: &Response,
-    request: &Request,
+    _request: &Request,
 ) -> Result<ResponseStatus, AnyErr> {
     let http_version = &response.http_version;
     let status_code = response.status_code;

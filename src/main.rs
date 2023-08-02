@@ -91,26 +91,6 @@ impl RouteHandler for PostLoginHandler {
     }
 }
 
-struct GetLoginHandler;
-impl RouteHandler for GetLoginHandler {
-    fn handle(&self, _request: Request) -> Result<Response, AnyErr> {
-        let html = include_str!("../assets/login.html");
-
-        Ok(ResponseBuilder::new()
-            .content_type(ContentType::Html)
-            .body_string(html.to_string())
-            .build())
-    }
-}
-
-struct HomeHandler {
-    database: Arc<Database>,
-}
-impl AuthRouteHandler for HomeHandler {
-    fn database(&self) -> Arc<Database> {
-        Arc::clone(&self.database)
-    }
-}
 impl RouteHandler for HomeHandler {
     fn handle(&self, request: Request) -> Result<Response, AnyErr> {
         let body = include_str!("../assets/home.html").to_string();
@@ -125,6 +105,18 @@ impl RouteHandler for HomeHandler {
             AuthResult::SessionNotPresent => Ok(login_redirect),
             AuthResult::SessionInvalid => Ok(login_redirect),
         }
+    }
+}
+
+struct GetLoginHandler;
+impl RouteHandler for GetLoginHandler {
+    fn handle(&self, _request: Request) -> Result<Response, AnyErr> {
+        let html = include_str!("../assets/login.html");
+
+        Ok(ResponseBuilder::new()
+            .content_type(ContentType::Html)
+            .body_string(html.to_string())
+            .build())
     }
 }
 
@@ -143,4 +135,12 @@ fn get_form_value<'a>(
     key: &str,
 ) -> Option<&'a String> {
     form_data.get(key)
+}
+struct HomeHandler {
+    database: Arc<Database>,
+}
+impl AuthRouteHandler for HomeHandler {
+    fn database(&self) -> Arc<Database> {
+        Arc::clone(&self.database)
+    }
 }
