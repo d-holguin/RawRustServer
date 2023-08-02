@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
-use crate::utils::AnyErr;
+use crate::{database::Database, utils::AnyErr};
 
 use super::{HttpMethod, Request, Response, ResponseBuilder};
 
@@ -43,7 +43,7 @@ impl Router {
     pub fn new() -> Self {
         Router {
             routes: HashMap::new(),
-            not_found_response: default_not_found_response().unwrap(),
+            not_found_response: default_not_found_response(),
         }
     }
     pub fn add_route<H: RouteHandler + 'static>(mut self, route: Route, handler: H) -> Self {
@@ -56,12 +56,12 @@ impl Router {
     }
 }
 
-fn default_not_found_response() -> Result<Response, AnyErr> {
+pub fn default_not_found_response() -> Response {
     let page_404 = include_str!("../../assets/404.html").to_string();
 
-    Ok(ResponseBuilder::new()
+    ResponseBuilder::new()
         .status_code(404)
         .reason_phrase("Not Found".to_string())
         .body_string(page_404)
-        .build())
+        .build()
 }

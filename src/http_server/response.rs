@@ -1,6 +1,12 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::HashMap,
+    str::FromStr,
+    time::{self, Duration, SystemTime, UNIX_EPOCH},
+};
 
 use crate::utils::AnyErr;
+
+use super::{cookie, Cookie};
 
 #[derive(Debug, Clone)]
 pub struct Response {
@@ -139,6 +145,22 @@ impl ResponseBuilder {
         self = self.content_length(content_length);
         self
     }
+    pub fn cookie(mut self, cookie: Cookie) -> Self {
+        if self.response.headers.is_none() {
+            self.response.headers = Some(HashMap::new());
+        }
+
+        let cookie_value = cookie.cookie_string();
+
+        self.response
+            .headers
+            .as_mut()
+            .unwrap()
+            .insert("Set-Cookie".to_string(), cookie_value);
+
+        self
+    }
+
     pub fn build(self) -> Response {
         self.response
     }

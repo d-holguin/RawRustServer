@@ -1,6 +1,8 @@
 use std::sync::Arc;
-use web_server::database::{Database, SimpleDB};
-use web_server::http_server::RouteHandler;
+use std::time::Instant;
+use web_server::database::Database;
+use web_server::http_server::{request, AuthResult, AuthRouteHandler, Cookie, RouteHandler};
+use web_server::models::Session;
 use web_server::{
     http_server::{
         ContentType, HttpMethod, Request, Response, ResponseBuilder, Router, ServerBuilder,
@@ -20,7 +22,12 @@ fn main() {
 fn run_server() -> Result<(), AnyErr> {
     let database = Arc::new(Database::database_init()?);
     let router = Router::new()
-        .add_route(HttpMethod::get("/home"), HomeHandler)
+        .add_route(
+            HttpMethod::get("/home"),
+            HomeHandler {
+                database: Arc::clone(&database),
+            },
+        )
         .add_route(HttpMethod::get("/favicon.ico"), FaviconHandler)
         .add_route(
             HttpMethod::post("/login"),
@@ -43,7 +50,7 @@ struct PostLoginHandler {
 impl RouteHandler for PostLoginHandler {
     fn handle(&self, request: Request) -> Result<Response, AnyErr> {
         let err_login = include_str!("../assets/error-login.html").to_string();
-        if let Some(form_data) = request.form_data {
+        if let Some(form_data) = request.form_urlencoded() {
             let error_response = Ok(ResponseBuilder::new()
                 .content_type(ContentType::Html)
                 .body_string(err_login)
@@ -59,7 +66,17 @@ impl RouteHandler for PostLoginHandler {
                 Some(user) if &user.password == password.unwrap() => {
                     // Login successful
                     println!("User Login: {:?}", user);
-                    return Ok(ResponseBuilder::new().temp_redirect("/home").build());
+                    let session_id = Session::generate_session_id();
+                    let session = Session {
+                        username: user.username.clone(),
+                        session_id: session_id.clone(),
+                        last_active: Instant::now(),
+                    };
+                    self.database.sessions.insert(session_id.clone(), session)?;
+                    return Ok(ResponseBuilder::new()
+                        .cookie(Cookie::new("session_id".to_string(), session_id))
+                        .temp_redirect("/home")
+                        .build());
                 }
                 _ => {
                     return error_response;
@@ -72,12 +89,6 @@ impl RouteHandler for PostLoginHandler {
             .body_string(err_login)
             .build())
     }
-}
-fn get_form_value<'a>(
-    form_data: &'a std::collections::HashMap<String, String>,
-    key: &str,
-) -> Option<&'a String> {
-    form_data.get(key)
 }
 
 struct GetLoginHandler;
@@ -92,17 +103,31 @@ impl RouteHandler for GetLoginHandler {
     }
 }
 
-struct HomeHandler;
-impl RouteHandler for HomeHandler {
-    fn handle(&self, _request: Request) -> Result<Response, AnyErr> {
-        let body = include_str!("../assets/home.html").to_string();
-
-        Ok(ResponseBuilder::new()
-            .content_type(ContentType::Html)
-            .body_string(body)
-            .build())
+struct HomeHandler {
+    database: Arc<Database>,
+}
+impl AuthRouteHandler for HomeHandler {
+    fn database(&self) -> Arc<Database> {
+        Arc::clone(&self.database)
     }
 }
+impl RouteHandler for HomeHandler {
+    fn handle(&self, request: Request) -> Result<Response, AnyErr> {
+        let body = include_str!("../assets/home.html").to_string();
+
+        let login_redirect = ResponseBuilder::new().temp_redirect("/login").build();
+
+        match self.authenticate_session(request)? {
+            AuthResult::Authenticated => Ok(ResponseBuilder::new()
+                .content_type(ContentType::Html)
+                .body_string(body)
+                .build()),
+            AuthResult::SessionNotPresent => Ok(login_redirect),
+            AuthResult::SessionInvalid => Ok(login_redirect),
+        }
+    }
+}
+
 struct FaviconHandler;
 impl RouteHandler for FaviconHandler {
     fn handle(&self, _request: Request) -> Result<Response, AnyErr> {
@@ -112,4 +137,10 @@ impl RouteHandler for FaviconHandler {
             .body_bytes(body)
             .build())
     }
+}
+fn get_form_value<'a>(
+    form_data: &'a std::collections::HashMap<String, String>,
+    key: &str,
+) -> Option<&'a String> {
+    form_data.get(key)
 }

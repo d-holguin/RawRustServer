@@ -6,7 +6,7 @@ use std::{
     str::FromStr,
 };
 
-use super::{ContentType, Route};
+use super::{ContentType, Cookie, Route};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HttpMethod {
@@ -45,7 +45,6 @@ pub struct Request {
     pub http_version: String,
     pub headers: HashMap<String, String>,
     pub body: Vec<u8>,
-    pub form_data: Option<HashMap<String, String>>,
 }
 
 impl Request {
@@ -55,10 +54,6 @@ impl Request {
         let headers = parse_headers(&mut lines)?;
         // Read body
         let mut body = Vec::new();
-        let content_type = headers
-            .get("content-type")
-            .map(|s| ContentType::from_str(s))
-            .transpose()?;
 
         if let Some(len) = headers.get("content-length") {
             let len: usize = len
@@ -86,41 +81,51 @@ impl Request {
         let method = HttpMethod::from_str(&method_string)
             .map_err(|e| AnyErr::wrap("Invalid HTTP Method".to_string(), e))?;
 
-        let form_data = if method == HttpMethod::POST {
-            match content_type {
-                Some(ContentType::FormUrlEncoded) => {
-                    let body_str = String::from_utf8(body.clone()).map_err(|e| {
-                        AnyErr::wrap("Error parsing request body as string".to_string(), e)
-                    })?;
-                    Some(parse_form_urlencoded(&body_str))
-                }
-                _ => {
-                    return Err(AnyErr::new(
-                        "Unsupported Content-Type for POST request".to_string(),
-                    ))
-                }
-            }
-        } else {
-            None
-        };
-
         Ok(Request {
             method,
             path,
             http_version,
             headers,
             body,
-            form_data,
         })
     }
-}
-fn parse_form_urlencoded(s: &str) -> HashMap<String, String> {
-    s.split('&')
-        .filter_map(|part| {
-            let mut split = part.splitn(2, '=');
-            Some((split.next()?.to_string(), split.next()?.to_string()))
-        })
-        .collect()
+
+    pub fn form_urlencoded(&self) -> Option<HashMap<String, String>> {
+        match self.content_type() {
+            Some(ContentType::FormUrlEncoded) => {
+                String::from_utf8(self.body.clone()).ok().map(|body_str| {
+                    body_str
+                        .split('&')
+                        .filter_map(|part| {
+                            let mut split = part.splitn(2, '=');
+                            Some((split.next()?.to_string(), split.next()?.to_string()))
+                        })
+                        .collect::<HashMap<String, String>>()
+                })
+            }
+            _ => None,
+        }
+    }
+    pub fn cookies(&self) -> Vec<Cookie> {
+        let mut cookies = Vec::new();
+        if let Some(cookie_header) = self.headers.get("cookie") {
+            for cookie_str in cookie_header.split(';') {
+                let parts: Vec<&str> = cookie_str.splitn(2, '=').collect();
+                if parts.len() == 2 {
+                    let name = parts[0].trim().to_string();
+                    let value = parts[1].trim().to_string();
+                    cookies.push(Cookie::new(name, value));
+                }
+            }
+        }
+        cookies
+    }
+
+    pub fn content_type(&self) -> Option<ContentType> {
+        self.headers
+            .get("content-type")
+            .and_then(|s| ContentType::from_str(s).ok())
+    }
 }
 
 fn read_request_line(lines: &mut Lines<&mut BufReader<TcpStream>>) -> Result<String, AnyErr> {
