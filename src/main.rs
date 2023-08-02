@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use web_server::database::SimpleDB;
+use web_server::database::{Database, SimpleDB};
 use web_server::http_server::RouteHandler;
 use web_server::{
     http_server::{
@@ -18,8 +18,7 @@ fn main() {
     }
 }
 fn run_server() -> Result<(), AnyErr> {
-    let database: Arc<SimpleDB<String, String>> = Arc::new(SimpleDB::new());
-    database.insert("admin".to_string(), "hunter12".to_string())?;
+    let database = Arc::new(Database::database_init()?);
     let router = Router::new()
         .add_route(HttpMethod::get("/home"), HomeHandler)
         .add_route(HttpMethod::get("/favicon.ico"), FaviconHandler)
@@ -39,7 +38,7 @@ fn run_server() -> Result<(), AnyErr> {
     server.run()
 }
 struct PostLoginHandler {
-    database: Arc<SimpleDB<String, String>>,
+    database: Arc<Database>,
 }
 impl RouteHandler for PostLoginHandler {
     fn handle(&self, request: Request) -> Result<Response, AnyErr> {
@@ -49,23 +48,17 @@ impl RouteHandler for PostLoginHandler {
                 .content_type(ContentType::Html)
                 .body_string(err_login)
                 .build());
-            let username = match form_data.get("username") {
-                Some(username) => username,
-                None => {
-                    return error_response;
-                }
-            };
+            let username = get_form_value(&form_data, "username");
+            let password = get_form_value(&form_data, "password");
 
-            let password = match form_data.get("password") {
-                Some(password) => password,
-                None => {
-                    return error_response;
-                }
-            };
+            if username.is_none() || password.is_none() {
+                return error_response;
+            }
 
-            match self.database.get(username.to_string())? {
-                Some(stored_password) if &stored_password == password => {
+            match self.database.users.get(username.unwrap().to_string())? {
+                Some(user) if &user.password == password.unwrap() => {
                     // Login successful
+                    println!("User Login: {:?}", user);
                     return Ok(ResponseBuilder::new().temp_redirect("/home").build());
                 }
                 _ => {
@@ -80,6 +73,13 @@ impl RouteHandler for PostLoginHandler {
             .build())
     }
 }
+fn get_form_value<'a>(
+    form_data: &'a std::collections::HashMap<String, String>,
+    key: &str,
+) -> Option<&'a String> {
+    form_data.get(key)
+}
+
 struct GetLoginHandler;
 impl RouteHandler for GetLoginHandler {
     fn handle(&self, _request: Request) -> Result<Response, AnyErr> {
