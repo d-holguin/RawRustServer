@@ -76,7 +76,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", top_error).trim(),
-            "Top Level Error\nCaused by:\n\tSecond Level Error\nCaused by:\n\tFirst Level Error"
+            "Error: Top Level Error\nCaused by:\n\tSecond Level Error\nCaused by:\n\tFirst Level Error"
         );
 
         println!("Display: {}", top_error);
