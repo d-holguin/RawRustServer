@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     models::{Session, User},
     utils::AnyErr,
-};
+}; 
 
 use super::SimpleDB;
 

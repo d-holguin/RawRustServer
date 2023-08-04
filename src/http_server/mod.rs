@@ -7,7 +7,7 @@ pub mod server;
 pub mod server_builder;
 
 pub use auth::*;
-pub use cookie::*;
+pub use cookie::Cookie;
 pub use request::*;
 pub use response::*;
 pub use router::*;

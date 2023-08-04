@@ -1,12 +1,8 @@
-use std::{
-    collections::HashMap,
-    str::FromStr,
-    time::{self, Duration, SystemTime, UNIX_EPOCH},
-};
+use std::{collections::HashMap, str::FromStr};
 
 use crate::utils::AnyErr;
 
-use super::{cookie, Cookie};
+use super::Cookie;
 
 #[derive(Debug, Clone)]
 pub struct Response {
@@ -41,6 +37,7 @@ pub enum ContentType {
     Json,
     Ico,
     FormUrlEncoded,
+    Css,
 }
 
 impl ContentType {
@@ -51,6 +48,7 @@ impl ContentType {
             ContentType::PlainTest => "text/plain",
             ContentType::Ico => "image/x-icon",
             ContentType::FormUrlEncoded => "application/x-www-form-urlencoded",
+            ContentType::Css => "text/css",
         }
     }
 }
@@ -63,6 +61,7 @@ impl FromStr for ContentType {
             "text/plain" => Ok(ContentType::PlainTest),
             "image/x-icon" => Ok(ContentType::Ico),
             "application/x-www-form-urlencoded" => Ok(ContentType::FormUrlEncoded),
+            "text/css" => Ok(ContentType::Css),
             _ => Err(AnyErr::new(format!("Invalid content type {}", s))),
         }
     }

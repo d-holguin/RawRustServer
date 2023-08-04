@@ -1,7 +1,9 @@
 use std::sync::Arc;
 use std::time::Instant;
 use web_server::database::Database;
-use web_server::http_server::{request, AuthResult, AuthRouteHandler, Cookie, RouteHandler};
+use web_server::handlers::login::GetLoginHandler;
+use web_server::handlers::CssHandler;
+use web_server::http_server::{AuthResult, AuthRouteHandler, Cookie, RouteHandler};
 use web_server::models::Session;
 use web_server::{
     http_server::{
@@ -28,6 +30,7 @@ fn run_server() -> Result<(), AnyErr> {
                 database: Arc::clone(&database),
             },
         )
+        .add_route(HttpMethod::get("/styles.css"), CssHandler)
         .add_route(HttpMethod::get("/favicon.ico"), FaviconHandler)
         .add_route(
             HttpMethod::post("/login"),
@@ -52,8 +55,8 @@ impl RouteHandler for PostLoginHandler {
         let err_login = include_str!("../assets/error-login.html").to_string();
         if let Some(form_data) = request.form_urlencoded() {
             let error_response = Ok(ResponseBuilder::new()
-                .content_type(ContentType::Html)
-                .body_string(err_login)
+                .status_code(401)
+                .reason_phrase("invalid login info".to_string())
                 .build());
             let username = get_form_value(&form_data, "username");
             let password = get_form_value(&form_data, "password");
@@ -105,18 +108,6 @@ impl RouteHandler for HomeHandler {
             AuthResult::SessionNotPresent => Ok(login_redirect),
             AuthResult::SessionInvalid => Ok(login_redirect),
         }
-    }
-}
-
-struct GetLoginHandler;
-impl RouteHandler for GetLoginHandler {
-    fn handle(&self, _request: Request) -> Result<Response, AnyErr> {
-        let html = include_str!("../assets/login.html");
-
-        Ok(ResponseBuilder::new()
-            .content_type(ContentType::Html)
-            .body_string(html.to_string())
-            .build())
     }
 }
 

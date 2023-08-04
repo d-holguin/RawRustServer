@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login Page</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome</h1>
+        <p>Please enter your username and password to login.</p>
+        <form id="login-form">
+            <label><b>Username</b></label><br />
+            <input type="text" placeholder="Enter Username" name="username" required><br />
+            <label"><b>Password</b></label><br />
+            <input type="password" placeholder="Enter Password" name="password" required><br />
+            <button type="submit">Login</button>
+        </form>
+        <p id="error-message" style="display: none; color: red;">Incorrect username or password.</p>
+    </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const username = this.elements['username'].value;
+            const password = this.elements['password'].value;
+            
+            const formData = new URLSearchParams({
+                username,
+                password
+            });
+
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData.toString(),
+            });
+
+            if (response.status !== 200) {
+                document.getElementById('error-message').style.display = 'block';
+            } else {
+                window.location.href = '/home';
+            }
+        });
+    </script>
+</body>
+</html>
