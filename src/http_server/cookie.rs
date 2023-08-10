@@ -5,8 +5,12 @@ pub struct Cookie {
 }
 
 impl Cookie {
-    pub fn new(name: String, value: String) -> Self {
-        Self { name, value }
+    pub fn new(name: impl Into<String>, value: String) -> Self {
+        let cookie_name: String = name.into();
+        Self {
+            name: cookie_name,
+            value,
+        }
     }
 
     pub fn cookie_string(self) -> String {
