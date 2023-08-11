@@ -37,7 +37,7 @@ impl RouteHandler for PostLoginHandler {
                     };
                     self.database.sessions.insert(session_id.clone(), session)?;
                     return Ok(ResponseBuilder::new()
-                        .cookie(Cookie::new("session_id".to_string(), session_id))
+                        .cookie(Cookie::new("session_id", session_id))
                         .build());
                 }
                 _ => {
