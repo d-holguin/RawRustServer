@@ -37,6 +37,7 @@ fn run_server() -> Result<(), AnyErr> {
                 database: Arc::clone(&database),
             },
         )
+        .add_route(HttpMethod::get("/images/*"), GetImageHandler)
         .add_route(HttpMethod::get("/login"), GetLoginHandler);
 
     let server = ServerBuilder::new()
@@ -80,5 +81,28 @@ struct HomeHandler {
 impl AuthRouteHandler for HomeHandler {
     fn database(&self) -> Arc<Database> {
         Arc::clone(&self.database)
+    }
+}
+
+pub struct GetImageHandler;
+
+impl RouteHandler for GetImageHandler {
+    fn handle(&self, request: Request) -> Result<Response, AnyErr> {
+        let path = request.path;
+
+        println!("PATH = {}", path);
+        if !path.starts_with("/images/") {
+            return Err(AnyErr::new("Invalid path"));
+        }
+
+        let full_path = format!("../assets/images/{}", path);
+
+        let image_data = std::fs::read(&full_path)
+            .map_err(|e| AnyErr::new(format!("Failed to read image: {}", e)))?;
+
+        Ok(ResponseBuilder::new()
+            .content_type(ContentType::Jpeg)
+            .body_bytes(image_data)
+            .build())
     }
 }
