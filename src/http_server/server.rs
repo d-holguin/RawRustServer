@@ -45,12 +45,10 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyEr
             .expect("Failed to set read timeout");
         match Request::from_reader(&mut buf_reader) {
             Ok(request) => {
-                let route = Route::new()
-                    .http_method(request.method.clone())
-                    .path(request.path.clone());
+                let handler = router.route(request.method.clone(), &request.path);
 
-                let response = match &router.routes.get(&route) {
-                    Some(handler) => handler.handle(request.clone())?,
+                let response = match handler {
+                    Some(h) => h.handle(request.clone())?,
                     None => router.not_found_response.clone(),
                 };
                 match send_response(&mut stream, &response, &request)? {

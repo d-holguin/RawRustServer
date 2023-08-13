@@ -1,9 +1,11 @@
+use std::ffi::OsStr;
+use std::path::Path;
 use std::sync::Arc;
 use web_server::database::Database;
 use web_server::handlers::login::{GetLoginHandler, PostLoginHandler};
-use web_server::handlers::CssHandler;
-use web_server::http_server::{AuthResult, AuthRouteHandler, RouteHandler};
+use web_server::handlers::{CssHandler, HomeHandler};
 
+use web_server::http_server::RouteHandler;
 use web_server::{
     http_server::{
         ContentType, HttpMethod, Request, Response, ResponseBuilder, Router, ServerBuilder,
@@ -48,23 +50,6 @@ fn run_server() -> Result<(), AnyErr> {
     server.run()
 }
 
-impl RouteHandler for HomeHandler {
-    fn handle(&self, request: Request) -> Result<Response, AnyErr> {
-        let body = include_str!("../assets/home.html").to_string();
-
-        let login_redirect = ResponseBuilder::new().temp_redirect("/login").build();
-
-        match self.authenticate_session(request)? {
-            AuthResult::Authenticated => Ok(ResponseBuilder::new()
-                .content_type(ContentType::Html)
-                .body_string(body)
-                .build()),
-            AuthResult::SessionNotPresent => Ok(login_redirect),
-            AuthResult::SessionInvalid => Ok(login_redirect),
-        }
-    }
-}
-
 struct FaviconHandler;
 impl RouteHandler for FaviconHandler {
     fn handle(&self, _request: Request) -> Result<Response, AnyErr> {
@@ -75,17 +60,8 @@ impl RouteHandler for FaviconHandler {
             .build())
     }
 }
-struct HomeHandler {
-    database: Arc<Database>,
-}
-impl AuthRouteHandler for HomeHandler {
-    fn database(&self) -> Arc<Database> {
-        Arc::clone(&self.database)
-    }
-}
 
 pub struct GetImageHandler;
-
 impl RouteHandler for GetImageHandler {
     fn handle(&self, request: Request) -> Result<Response, AnyErr> {
         let path = request.path;
@@ -95,13 +71,31 @@ impl RouteHandler for GetImageHandler {
             return Err(AnyErr::new("Invalid path"));
         }
 
-        let full_path = format!("../assets/images/{}", path);
+        let relative_path = &path["/images/".len()..];
+        let full_path = Path::new("assets/images/").join(relative_path);
+
+        println!("Trying to access file at: {:?}", full_path.canonicalize());
+        // Security check
+        if !full_path
+            .display()
+            .to_string()
+            .starts_with("assets/images/")
+        {
+            return Err(AnyErr::new("Invalid path"));
+        }
+
+        let ext = full_path.extension().and_then(OsStr::to_str);
+        let content_type = match ext {
+            Some("jpg") | Some("jpeg") => ContentType::Jpeg,
+            Some("png") => ContentType::Png,
+            _ => return Err(AnyErr::new("Unsupported image format")),
+        };
 
         let image_data = std::fs::read(&full_path)
             .map_err(|e| AnyErr::new(format!("Failed to read image: {}", e)))?;
 
         Ok(ResponseBuilder::new()
-            .content_type(ContentType::Jpeg)
+            .content_type(content_type)
             .body_bytes(image_data)
             .build())
     }

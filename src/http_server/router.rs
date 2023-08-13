@@ -1,6 +1,6 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use crate::{database::Database, utils::AnyErr};
+use crate::utils::AnyErr;
 
 use super::{HttpMethod, Request, Response, ResponseBuilder};
 
@@ -17,14 +17,14 @@ pub struct Router {
 #[derive(PartialEq, Eq, Hash)]
 pub struct Route {
     pub http_method: HttpMethod,
-    pub path: String,
+    pub path_segments: Vec<String>,
 }
 
 impl Route {
     pub fn new() -> Self {
         Route {
             http_method: HttpMethod::GET,
-            path: "/".to_string(),
+            path_segments: Vec::new(),
         }
     }
 
@@ -34,8 +34,34 @@ impl Route {
     }
 
     pub fn path(mut self, path: String) -> Self {
-        self.path = path;
+        let segments: Vec<String> = path
+            .split('/')
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .collect();
+        self.path_segments = segments;
         self
+    }
+    pub fn matches(&self, http_method: &HttpMethod, path: &str) -> bool {
+        if &self.http_method != http_method {
+            return false;
+        }
+
+        let request_segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+
+        if self.path_segments.len() != request_segments.len() {
+            return false;
+        }
+
+        for (route_segment, request_segment) in
+            self.path_segments.iter().zip(request_segments.iter())
+        {
+            if route_segment != "*" && route_segment != request_segment {
+                return false;
+            }
+        }
+
+        true
     }
 }
 
@@ -45,6 +71,14 @@ impl Router {
             routes: HashMap::new(),
             not_found_response: default_not_found_response(),
         }
+    }
+    pub fn route(&self, method: HttpMethod, path: &str) -> Option<&Box<dyn RouteHandler>> {
+        for (route, handler) in &self.routes {
+            if route.matches(&method, path) {
+                return Some(handler);
+            }
+        }
+        None
     }
     pub fn add_route<H: RouteHandler + 'static>(mut self, route: Route, handler: H) -> Self {
         self.routes.insert(route, Box::new(handler));

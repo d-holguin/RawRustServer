@@ -11,6 +11,7 @@ pub enum ContentType {
     FormUrlEncoded,
     Css,
     Jpeg,
+    Png,
 }
 
 impl ContentType {
@@ -23,6 +24,7 @@ impl ContentType {
             ContentType::FormUrlEncoded => "application/x-www-form-urlencoded",
             ContentType::Css => "text/css",
             ContentType::Jpeg => "image/jpeg",
+            ContentType::Png => "image/png",
         }
     }
 }
@@ -37,6 +39,7 @@ impl FromStr for ContentType {
             "application/x-www-form-urlencoded" => Ok(ContentType::FormUrlEncoded),
             "text/css" => Ok(ContentType::Css),
             "image/jpeg" => Ok(ContentType::Jpeg),
+            "image/png" => Ok(ContentType::Png),
             _ => Err(AnyErr::new(format!("Invalid content type {}", s))),
         }
     }

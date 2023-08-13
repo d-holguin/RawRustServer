@@ -12,7 +12,6 @@ pub struct PostLoginHandler {
 }
 impl RouteHandler for PostLoginHandler {
     fn handle(&self, request: Request) -> Result<Response, AnyErr> {
-        let err_login = include_str!("./error-login.html").to_string();
         if let Some(form_data) = request.form_urlencoded() {
             let error_response = Ok(ResponseBuilder::new()
                 .status_code(401)
@@ -48,7 +47,7 @@ impl RouteHandler for PostLoginHandler {
 
         Ok(ResponseBuilder::new()
             .content_type(ContentType::Html)
-            .body_string(err_login)
+            .temp_redirect("/login")
             .build())
     }
 }
