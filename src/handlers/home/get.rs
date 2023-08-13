@@ -19,7 +19,7 @@ impl AuthRouteHandler for HomeHandler {
 
 impl RouteHandler for HomeHandler {
     fn handle(&self, request: Request) -> Result<Response, AnyErr> {
-        let body = include_str!("../../../assets/home.html").to_string();
+        let body = include_str!("./home.html").to_string();
 
         let login_redirect = ResponseBuilder::new().temp_redirect("/login").build();
 
