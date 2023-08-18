@@ -6,6 +6,7 @@
 - [ThreadPool](#threadpool)
 - [Error Handling](#error-handling)
 - [SimpleDB](#database)
+- [Logger Utility](#logger-utility)
 
 ## Usage
 
@@ -149,4 +150,17 @@ if let Some(len) = headers.get("content-length") {
         reader.consume(bytes_to_read);
     }
 }
+```
+## Logger Utility
+
+The `Logger Utility` provides a simple and efficient way to log messages both to the terminal and to a file. The logger supports different log levels such as `INFO` and `ERROR`.
+
+To use the logger, first initialize the global logger backend with the desired log file name:
+```rust
+logger_backend::init_global_logger("log.txt");
+```
+Then you can use the logger anywhere in code like this:
+
+```
+logger::info("Starting Server...");
 ```
