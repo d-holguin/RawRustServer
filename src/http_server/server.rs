@@ -1,5 +1,8 @@
-use super::{Request, Response, Route, Router};
-use crate::{threadpool::ThreadPool, utils::AnyErr};
+use super::{Request, Response, Router};
+use crate::{
+    threadpool::ThreadPool,
+    utils::{logger, AnyErr},
+};
 use std::{
     collections::HashMap,
     io::{BufReader, Write},
@@ -16,7 +19,7 @@ pub struct Server {
 
 impl Server {
     pub fn run(self) -> Result<(), AnyErr> {
-        println!("Server Started...");
+        logger::info("Starting Server...");
         for stream_result in self.listener.incoming() {
             let router = Arc::clone(&self.router);
             match stream_result {
@@ -39,7 +42,7 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyEr
     let mut buf_reader = BufReader::new(stream.try_clone()?);
 
     loop {
-        println!("Handling a request");
+        logger::info("Handling a request");
         stream
             .set_read_timeout(Some(Duration::from_secs(60)))
             .expect("Failed to set read timeout");
@@ -56,8 +59,8 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyEr
                     ResponseStatus::Continue => continue,
                 }
             }
-            Err(e) => {
-                eprintln!("Error reading request: {}", e);
+            Err(_) => {
+                logger::error("Couldn't read request");
                 break;
             }
         }

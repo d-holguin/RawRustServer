@@ -4,7 +4,7 @@ use crate::{
     database::Database,
     http_server::{ContentType, Cookie, Request, Response, ResponseBuilder, RouteHandler},
     models::Session,
-    utils::AnyErr,
+    utils::{logger, AnyErr},
 };
 
 pub struct PostLoginHandler {
@@ -27,7 +27,7 @@ impl RouteHandler for PostLoginHandler {
             match self.database.users.get(username.unwrap().to_string())? {
                 Some(user) if &user.password == password.unwrap() => {
                     // Login successful
-                    println!("User Login: {:?}", user);
+                    logger::info(format!("User: {} successful login", user.username).as_str());
                     let session_id = Session::generate_session_id();
                     let session = Session {
                         username: user.username.clone(),
@@ -40,6 +40,7 @@ impl RouteHandler for PostLoginHandler {
                         .build());
                 }
                 _ => {
+                    logger::error("Invalid Login Credentials");
                     return error_response;
                 }
             }

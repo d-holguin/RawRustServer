@@ -6,6 +6,7 @@ use web_server::handlers::login::{GetLoginHandler, PostLoginHandler};
 use web_server::handlers::{CssHandler, HomeHandler};
 
 use web_server::http_server::RouteHandler;
+use web_server::utils::logger_backend;
 use web_server::{
     http_server::{
         ContentType, HttpMethod, Request, Response, ResponseBuilder, Router, ServerBuilder,
@@ -14,6 +15,7 @@ use web_server::{
 };
 
 fn main() {
+    logger_backend::init_global_logger("server.log");
     match run_server() {
         Ok(_) => println!("Server shut down successfully."),
         Err(e) => {
