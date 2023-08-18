@@ -156,9 +156,9 @@ if let Some(len) = headers.get("content-length") {
 The `Logger Utility` provides a simple and efficient way to log messages both to the terminal and to a file. The logger supports different log levels such as <span style="color:green">INFO</span> and <span style="color:red">ERROR</span>.
 
 When logging an `INFO` message, it will appear in the terminal as:
-```plaintext
+
 <span style="color:green">[INFO]</span> Starting Server...
-```
+
 To use the logger, first initialize the global logger backend with the desired log file name:
 
 
