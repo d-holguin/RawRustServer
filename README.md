@@ -163,10 +163,11 @@ To use the logger, first initialize the global logger backend with the desired l
 
 
 ```rust
-logger_backend::init_global_logger("log.txt");
+logger_backend::init_global_logger("logs/server.log");
 ```
 Then you can use the logger anywhere in code like this:
 
 ```
 logger::info("Starting Server...");
 ```
+![Usage Example](https://github.com/d-holguin/RustThreadPoolServer/blob/main/example/logging-example.PNG)

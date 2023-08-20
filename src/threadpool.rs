@@ -6,6 +6,8 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use crate::utils::logger;
+
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: mpsc::Sender<Message>,
@@ -41,15 +43,16 @@ impl Worker {
             let message = receiver.lock().unwrap().recv();
             match message {
                 Ok(Message::Job(job)) => {
-                    println!("Worker {id} got a job; executing.");
                     job();
                 }
                 Ok(Message::Terminate) => {
-                    println!("worker {id} terminated; Shutting down.");
+                    logger::info(&format!("Terminating worker {}", id));
                     break;
                 }
                 Err(e) => {
-                    println!("Error {e} worker {id} disconnected; Shutting down.");
+                    logger::info(&format!(
+                        "Error {e} worker {id} disconnected; Shutting down."
+                    ));
                     break;
                 }
             }

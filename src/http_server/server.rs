@@ -25,7 +25,7 @@ impl Server {
             match stream_result {
                 Ok(stream) => self.threadpool.execute(move || {
                     if let Err(e) = handle_connection(stream, &router) {
-                        eprintln!("Error handling connection: {}", e);
+                        logger::error(&format!("Error Handling connection: {}", e));
                     }
                 }),
                 Err(e) => return Err(AnyErr::new(format!("Failed to handle connection {}", e))),
@@ -59,8 +59,8 @@ fn handle_connection(mut stream: TcpStream, router: &Router) -> Result<(), AnyEr
                     ResponseStatus::Continue => continue,
                 }
             }
-            Err(_) => {
-                logger::error("Couldn't read request");
+            Err(e) => {
+                logger::error(&format!("Couldn't read request {}", e));
                 break;
             }
         }

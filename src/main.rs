@@ -6,7 +6,7 @@ use web_server::handlers::login::{GetLoginHandler, PostLoginHandler};
 use web_server::handlers::{CssHandler, HomeHandler};
 
 use web_server::http_server::RouteHandler;
-use web_server::utils::logger_backend;
+use web_server::utils::{logger, logger_backend};
 use web_server::{
     http_server::{
         ContentType, HttpMethod, Request, Response, ResponseBuilder, Router, ServerBuilder,
@@ -15,7 +15,7 @@ use web_server::{
 };
 
 fn main() {
-    logger_backend::init_global_logger("server.log");
+    logger_backend::init_global_logger("logs/server.log");
     match run_server() {
         Ok(_) => println!("Server shut down successfully."),
         Err(e) => {
@@ -67,8 +67,7 @@ pub struct GetImageHandler;
 impl RouteHandler for GetImageHandler {
     fn handle(&self, request: Request) -> Result<Response, AnyErr> {
         let path = request.path;
-
-        println!("PATH = {}", path);
+        logger::info(&format!("Request for image. PATH = {}", path));
         if !path.starts_with("/images/") {
             return Err(AnyErr::new("Invalid path"));
         }
@@ -76,7 +75,10 @@ impl RouteHandler for GetImageHandler {
         let relative_path = &path["/images/".len()..];
         let full_path = Path::new("assets/images/").join(relative_path);
 
-        println!("Trying to access file at: {:?}", full_path.canonicalize());
+        logger::info(&format!(
+            "Trying to access file at: {:?}",
+            full_path.canonicalize()
+        ));
         // Security check
         if !full_path
             .display()

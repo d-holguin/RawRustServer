@@ -6,6 +6,7 @@ use std::{
 
 pub struct LoggerBackend {
     terminal: Mutex<BufWriter<std::io::Stdout>>,
+    error_terminal: Mutex<BufWriter<std::io::Stderr>>,
     file: Mutex<BufWriter<File>>,
 }
 
@@ -43,35 +44,53 @@ pub fn global_logger() -> &'static LoggerBackend {
 
 impl LoggerBackend {
     pub fn new(filename: &str) -> Self {
+        let parent_dir = std::path::Path::new(filename)
+            .parent()
+            .unwrap_or(&std::path::Path::new("."));
+
+        if let Err(e) = std::fs::create_dir_all(&parent_dir) {
+            panic!(
+                "Failed to create log directory: {}. Error: {}",
+                parent_dir.display(),
+                e
+            );
+        }
+
         let file = OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
             .open(filename)
-            .expect("Could create logger backend");
+            .expect("Could not create logger backend");
         let file = BufWriter::new(file);
         let terminal = BufWriter::new(std::io::stdout());
+        let error_terminal = BufWriter::new(std::io::stderr());
         LoggerBackend {
             terminal: Mutex::new(terminal),
             file: Mutex::new(file),
+            error_terminal: Mutex::new(error_terminal),
         }
     }
     pub fn log(&self, level: LogLevel, message: &str) {
-        let mut terminal = self.terminal.lock().unwrap();
-        let mut file = self.file.lock().unwrap();
-
         match level {
             LogLevel::INFO => {
-                writeln!(terminal, "\x1B[32m[INFO]\x1B[0m {}", message).unwrap();
-                writeln!(file, "[INFO] {}", message).unwrap();
+                if let Ok(mut terminal) = self.terminal.lock() {
+                    let _ = writeln!(terminal, "\x1B[32m[INFO]\x1B[0m {}", message);
+                    let _ = terminal.flush();
+                }
             }
             LogLevel::ERROR => {
-                writeln!(terminal, "\x1B[31m[ERROR]\x1B[0m {}", message).unwrap();
-                writeln!(file, "[ERROR] {}", message).unwrap();
+                if let Ok(mut error_terminal) = self.error_terminal.lock() {
+                    let _ = writeln!(error_terminal, "\x1B[31m[ERROR]\x1B[0m {}", message);
+                    let _ = error_terminal.flush();
+                }
             }
         }
-
-        terminal.flush().unwrap();
-        file.flush().unwrap();
+        if let Ok(mut file) = self.file.lock() {
+            let _ = writeln!(file, "[{}] {}", level.as_ref(), message);
+            let _ = file.flush();
+        } else {
+            eprint!("error writing to file");
+        }
     }
 }
