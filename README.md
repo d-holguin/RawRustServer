@@ -1,7 +1,7 @@
-# RustThreadPoolServer
-`RustThreadPoolServer` is a multi-threaded web server built in Rust, featuring session-based authentication, an in-memory database, wildcard image support, and a `Galactic Bounty Hunter` theme. Using only the Rust standard library and no third-party dependencies, this project serves as a hands-on exploration of Rust's concurrency features and HTTP principles.
+# RawRustServer
+`RawRustServer` is a multi-threaded web server built in Rust, featuring session-based authentication, an in-memory database, wildcard image support, and a `Galactic Bounty Hunter` theme. Using only the Rust standard library and no third-party dependencies, this project serves as a hands-on exploration of Rust's concurrency features and HTTP principles.
 ## Table of Contents
-- [RustThreadPoolServer](#rustthreadpoolserver)
+- [RawRustServer](#RawRustServer)
 - [Usage](#usage)
 - [ThreadPool](#threadpool)
 - [Error Handling](#error-handling)
@@ -10,7 +10,7 @@
 
 ## Usage
 
-![Usage Example](https://github.com/d-holguin/RustThreadPoolServer/blob/main/example/usage-example.gif)
+![Usage Example](https://github.com/d-holguin/RawRustServer/blob/main/example/usage-example.gif)
 ```rust
 fn main() {
     match run_server() {
@@ -93,7 +93,7 @@ impl ThreadPool {
 ```
 ## Database
 
-`RustThreadPoolServer` includes a simple in-memory database for handling user and session data.
+`RawRustServer` includes a simple in-memory database for handling user and session data.
 
 ```rust
 pub struct Database {
@@ -170,4 +170,4 @@ Then you can use the logger anywhere in code like this:
 ```
 logger::info("Starting Server...");
 ```
-![Usage Example](https://github.com/d-holguin/RustThreadPoolServer/blob/main/example/logging-example.PNG)
+![Usage Example](https://github.com/d-holguin/RawRustServer/blob/main/example/logging-example.PNG)
