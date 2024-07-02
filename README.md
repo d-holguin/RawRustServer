@@ -1,5 +1,5 @@
 # RawRustServer
-`RawRustServer` is a multi-threaded web server built in Rust, featuring session-based authentication, an in-memory database, wildcard image support, and a `Galactic Bounty Hunter` theme. Using only the Rust standard library and no third-party dependencies, this project serves as a hands-on exploration of Rust's concurrency features and HTTP principles.
+`RawRustServer`  is a multi-threaded web server built in Rust for practice and self-learning. It originally expanded on the Rust book's Multi-Threaded Web Server project, which you can find here: https://doc.rust-lang.org/book/ch20-00-final-project-a-web-server.html 
 ## Table of Contents
 - [RawRustServer](#RawRustServer)
 - [Usage](#usage)
