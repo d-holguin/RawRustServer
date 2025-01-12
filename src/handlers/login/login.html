@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Galactic Hunter Login</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<style>
+    body {
+        background-image: url('./images/space-background.jpg');
+        background-size: cover;
+        background-repeat: no-repeat;
+        font-family: 'Orbitron', sans-serif;
+        color: #d4d4d4;
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .container {
+        background-color: rgba(20, 20, 20, 0.8);
+        border-radius: 15px;
+        width: 80%;
+        max-width: 600px;
+        padding: 2rem;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        color: #db952e;
+        text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.7);
+        text-align: center;
+    }
+
+    p {
+        color: #a8a8a8;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    label,
+    input,
+    button {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0.5rem 0;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+        padding: 0.5rem;
+        border: 2px solid #db952e;
+        background: transparent;
+        color: #d4d4d4;
+    }
+
+    button {
+        padding: 1rem;
+        font-family: 'Orbitron', sans-serif;
+        background-color: #db952e;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+
+    #error-message {
+        color: #ff4e4e;
+        text-align: center;
+    }
+</style>
+
+<body>
+    <div class="container">
+        <h1>Galactic Hunter Portal</h1>
+        <p>Input credentials to access the bounty database.</p>
+        <form id="login-form">
+            <label><b>Hunter ID</b></label><br />
+            <input type="text" placeholder="Enter Tracker ID" name="username" required><br />
+            <label><b>Encryption Key</b></label><br />
+            <input type="password" placeholder="Enter Secure Code" name="password" required><br />
+            <button type="submit">Access Bounty Database</button>
+        </form>
+        <p id="error-message" style="display: none;">Access Denied. Verify your credentials.</p>
+    </div>
+
+<script>
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const username = this.elements['username'].value;
+        const password = this.elements['password'].value;
+
+        const formData = new URLSearchParams({
+            username,
+            password
+        });
+
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString(),
+        });
+
+        if (response.status !== 200) {
+            document.getElementById('error-message').style.display = 'block';
+        } else {
+            window.location.href = '/home';
+        }
+    });
+</script>
+</body>
+
+</html>
+
+
+
+    

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Galactic Bounty Hunter Collective Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            color: #d4d4d4;
+            margin: 0;
+            background-image: url('./images/space-background.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+
+        .container {
+            background-color: rgba(20, 20, 20, 0.9);
+            border-radius: 15px;
+            width: 95%;
+            max-width: 1200px;
+            padding: 3rem;
+            margin: 2% auto;
+        }
+
+        h1,
+        h2 {
+            color: #db952e;
+            text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.7);
+        }
+
+        p,
+        ul {
+            color: #a8a8a8;
+        }
+
+        a {
+            color: #db952e;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #ffcc66;
+        }
+
+        footer {
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Galactic Bounty Hunter Collective</h1>
+        <p>Welcome, Admin!</p>
+        <section id="bounty-alerts">
+            <h2>Bounty Alerts</h2>
+            <ul>
+                <li>Bounty for Zrya Meteorblade: Reward 5000 credits</li>
+                <li>Bounty for Zaraq Starbane: Reward 8000 credits</li>
+            </ul>
+        </section>
+        <section id="my-bounties">
+            <h2>My Active Bounties</h2>
+
+        </section>
+        <footer>
+            <a href="/profile">Profile</a> | <a href="/settings">Settings</a> | <a href="/logout">Log Out</a>
+            <br>
+            <a href="/faq">FAQ</a> | <a href="/legal">Legal</a>
+        </footer>
+    </div>
+</body>
+
+</html>
